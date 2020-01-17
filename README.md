@@ -48,3 +48,37 @@ When I specified an orientation in the processing step, I made one mistake of sc
 The app displays the board in a mirror image, as I was solving the puzzle with the pattern facing up.
 
 when scanning a batch of peices, scan a reference card to make sure the scale hasn't changed.
+
+## Usage
+### Parameters for app:
+-new to create a new board
+
+-ort to disregard orientation data
+
+-ext to perform an exhaustive candidate search
+
+### Parameters for processor:
+-ort to specify allowed orientations. Do not include if there is no data. e.g. dot quadrant. Example: -ort 10 = [ False True False True ] meaning you're allowed to use this peice rotated 1 or 3 times counterclockwire. This would be a stripes peice because this has 2 possible orientations. -ort 1 = [ True False False False ]. This would be a triangles or clubs peice that is only allowed in its original scanned rotation.
+
+-debugall to view all the steps.
+
+### app keys
+0-9 select the suggested peice
+
+b go backwards
+
+? display location
+
+pX,Y set cursor to x,y
+
+m show more candidates
+
+s save
+
+q quit
+
+('ccc/box1/1a', 3) manually specify a particular peice and orientation
+
+### Other app settings:
+Change SolvingType in app.py to 'Special' and edit SpecialSolving python file to your liking
+
