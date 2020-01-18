@@ -87,3 +87,6 @@ Dependency modules: There are several depencies, mostly numpy and matplotlib. Si
 
 ## Important: 
 Make sure your python is 64 bit. All puzzle peices are loaded into RAM and the process takes about 4 gigs in ram. This will crash in a 32bit instance.
+
+## Screenshot:
+![image](https://raw.githubusercontent.com/EitanTal/PyJigsaw/master1/App.png)
