@@ -82,3 +82,8 @@ q quit
 ### Other app settings:
 Change SolvingType in app.py to 'Special' and edit SpecialSolving python file to your liking
 
+# Installation notes
+Dependency modules: There are several depencies, mostly numpy and matplotlib. Simply run the scripts and google any errors you come across.
+
+## Important: 
+Make sure your python is 64 bit. All puzzle peices are loaded into RAM and the process takes about 4 gigs in ram. This will crash in a 32bit instance.
