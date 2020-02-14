@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.image as mpimg
+import cv2
 import sys
 
 workdir = r'C:\jigsaw\data\2000'
@@ -24,14 +25,13 @@ def rotate_one(l):
 def LoadBigImg():
 	#filename = workdir+'\\'+'1200ffs.png'
 	filename = workdir+r'\boxart\edited'+r'\clearart.png' # 600 dpi
-	imgTmp = mpimg.imread(filename)
+	#imgTmp = mpimg.imread(filename)
+	imgTmp = cv2.imread(filename)
 	print('Loaded:', filename)
 	return imgTmp
 	
 def DoSingle(i, x, y):
-	print(i.shape)
 	sy, sx = i.shape
-	print(i.shape)
 	px = sx / 50
 	py = sy / 40
 	startx = px*x
@@ -48,12 +48,20 @@ def DoSingle(i, x, y):
 	endx = min(endx, sx-1)
 	endy = min(endy, sy-1)
 	
-	print('working on',x,y,'crds:',topx,topy,endx,endy)
+	print('working on',x+1,y+1,'crds:',topx,topy,endx,endy)
 	z = i[topy:endy,topx:endx]
-	filename = r'\%d_%d.png'%(x,y)
+	#zz = np.array(i.shape+(2,2))
+	#zz[:] = 255
+	#zz[1:,1:] = z
+	print (z.shape)
+	z[0,:]  = 255
+	z[-1,:] = 255
+	z[:,0]  = 255
+	z[:,-1] = 255
+	filename = r'\%d_%d.png'%(x+1,y+1)
 	wd = workdir+r'\breakme'
 	filename = wd+filename
-	mpimg.imsave(filename, z)
+	mpimg.imsave(filename, z, cmap='gray')
 	print('saved:',filename)
 	
 def rgba2grey(rgba):
@@ -70,7 +78,7 @@ if __name__ == '__main__':
 	else:
 		x = y = 0
 		if (len(sys.argv) >= 3):
-			x = int(sys.argv[1])
-			y = int(sys.argv[2])
+			x = int(sys.argv[1])-1
+			y = int(sys.argv[2])-1
 		DoSingle(i,x,y)
 		
