@@ -83,7 +83,11 @@ def dewhite(img):
 				
 	for y in range(sy):
 		for x in range(sx):
-			img[y][x] = 255-img[y][x]
+			i = img[y][x]
+			i = i * 3
+			i = min(i,255)
+			i = 255 - i
+			img[y][x] = i
 	
 	return img
 
@@ -151,16 +155,6 @@ def midrange2grey(work):
 	return work
 
 def glareElimination(img):
-	# plot 7x7 pixels white in the top-left corner.
-	for y in range(7):
-		for x in range(7):
-			img[y][x] = 255
-	
-	# add a white column at the end:
-	white  = 256
-	sy, sx = img.shape
-	img = np.column_stack( [ img , np.full(sy, 255, dtype=np.uint8) ] )
-	
 	# Convert all midrange to grey
 	work = np.copy(img)
 	midrange2grey(work)
@@ -220,10 +214,11 @@ def glareElimination(img):
 def findCenter(a):
 	# find the center of mass
 	sy, sx = a.shape
+	blacksOnly = cv2.inRange(a, 0, 1)
 	x, y = np.meshgrid(np.linspace(0,sx-1,sx), np.linspace(0,sy-1,sy))
-	zx = x * a
-	zy = y * a
-	tot =  a.sum()
+	zx = x * blacksOnly
+	zy = y * blacksOnly
+	tot =  blacksOnly.sum()
 	xsum = zx.sum()
 	ysum = zy.sum()
 	return ( xsum / tot, ysum / tot )
@@ -263,7 +258,7 @@ def makeRad(a,dmax,cm):
 				v = a[y1][x1]
 			else:
 				v = 0
-			if (v != 0):
+			if (v == 255):
 				b[ang] = d
 				break
 	return b
@@ -625,9 +620,9 @@ def imgPreprocessing(InputImg):
 	else:
 		img = deexposure(img)
 
-	img = clearbg(img)
-	imshow(img)
-	#img = glareElimination(img)
+	#img = clearbg(img)
+	#imshow(img)
+	img = glareElimination(img)
 	
 	
 	if debug:
