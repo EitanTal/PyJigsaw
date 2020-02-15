@@ -489,6 +489,29 @@ def imgPreprocessing(InputImg):
 	img = rgb2gray(InputImg)
 	return img
 	
+def determinetype(gauge):
+	classes = {
+		'00++':'=', '00-+':'=','00+-':'=','00--':'=', # corners
+		'0---':'0', '0+++':'3','0--+':'>','0+--':'<','0-++':'>','0++-':'<','0-+-':'a','0+-+':'a', # edges
+		'+-+-':'A', # classic puzzle peice
+		'++--':'B', # B-type puzzle peice
+		'++++':'+', # plus-type
+		'----':'X', # X-type
+		'+++-':'T', # T-type
+		'+---':'K', # K-type
+	}
+	text = ''
+	for g in gauge:
+		if (g == 0): text += '0'
+		if (g <  0): text += '-'
+		if (g >  0): text += '+'
+	
+	t = text*2
+	for k in classes.keys():
+		if k in t:
+			return classes[k]
+	return '?'
+
 def process(imgnr):
 	filename = datadir+'\\'+str(imgnr)+".png"
 	imgTmp = cv2.imread(filename)
@@ -502,7 +525,7 @@ def process(imgnr):
 	q = makeQuad(corners)
 	p = getProfiles(img, q)
 	flats = sum(theType == 0 for theType in p[1])
-	print( 'actual flats:', flats )
+	#print( 'actual flats:', flats )
 	
 	x.corners = corners
 	x.flats = flats
@@ -510,6 +533,7 @@ def process(imgnr):
 	x.types = p[1]
 	x.p = p[0]
 	x.id = imgnr
+	print('Peice Type:', determinetype(x.types), 'ID:',imgnr)
 	return x
 	
 def export(xjig):
