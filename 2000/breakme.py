@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.image as mpimg
-import cv2
+from cv2 import cv2
 import sys
 
 workdir = r'C:\jigsaw\data\2000'
@@ -11,7 +10,7 @@ def rotate(l, n):
 	
 def rotate_p(l, n):
 	result = l
-	for i in range(n):
+	for _ in range(n):
 		result = rotate_one(result)
 	return result
 
@@ -24,8 +23,8 @@ def rotate_one(l):
 
 def LoadBigImg():
 	#filename = workdir+'\\'+'1200ffs.png'
-	filename = workdir+r'\boxart\edited'+r'\clearart.png' # 600 dpi
-	#imgTmp = mpimg.imread(filename)
+	#filename = workdir+r'\boxart\edited'+r'\clearart.png' # 600 dpi
+	filename = workdir + r'\boxart\edited\1800_take2.png'
 	imgTmp = cv2.imread(filename)
 	print('Loaded:', filename)
 	return imgTmp
@@ -61,7 +60,8 @@ def DoSingle(i, x, y):
 	filename = r'\%d_%d.png'%(x+1,y+1)
 	wd = workdir+r'\breakme'
 	filename = wd+filename
-	mpimg.imsave(filename, z, cmap='gray')
+
+	cv2.imwrite(filename, z)
 	print('saved:',filename)
 	
 def rgba2grey(rgba):
