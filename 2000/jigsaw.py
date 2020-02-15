@@ -12,7 +12,7 @@ def rotate(l, n):
 	
 def rotate_p(l, n):
 	result = l
-	for i in range(n):
+	for _ in range(n):
 		result = rotate_one(result)
 	return result
 
@@ -45,6 +45,7 @@ class jigsaw:
 		profiles = self.profile
 		np.savez_compressed(outfile, m=meta, p=profiles)
 		
+	@staticmethod
 	def load(id):
 		infile = workdir + '\\' + str(id) + '.npz'
 		loaded = np.load(infile, allow_pickle=True)
@@ -69,6 +70,7 @@ class jigsaw:
 				plt.imshow(inverted, cmap = plt.get_cmap('gray'))
 				plt.show()
 
+	@staticmethod
 	def loadAll():
 		pass # return a list
 		
