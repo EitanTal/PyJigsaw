@@ -2,3 +2,5 @@ data/
 sample data.zip
 Board.txt
 board.xlsx
+2000/rgb.png
+*.pyc
