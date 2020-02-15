@@ -357,27 +357,6 @@ def findCorners(img):
 
 	return corners
 
-	
-def bilinear(img, x, y):
-	sy, sx = img.shape
-	if (sy  <= y+1) or (sx <= x+1): return 255
-	if (y   <  0  ) or (x  <    0): return 255
-	iX = int(x)
-	_X = x - iX
-	nX = 1 - _X
-	iY = int(y)
-	_Y = y - iY
-	nY = 1 - _Y
-	L  = [0,0,0,0]
-	L[0] = img[iY  ][iX  ]
-	L[1] = img[iY  ][iX+1]
-	L[2] = img[iY+1][iX  ]
-	L[3] = img[iY+1][iX+1]
-	a1 = L[0] * nX + L[1] * _X
-	a2 = L[2] * nX + L[3] * _X
-	a  = a1   * nY + a2   * _Y
-	return a
-	
 def makeQuad(corners):
 	sideLen  = []
 	sideVect = []
@@ -428,18 +407,22 @@ def getProfiles(img, q):
 		v2y = math.sin(_ang + math.pi/2)
 		v2 = [v2x , v2y ]
 		hsy = sy//2
-		x, y = np.meshgrid(np.linspace(0,sx-1,sx), np.linspace(-hsy,hsy-1,sy))
-		_x = x * v1[0] + y * v2[0] + a[0]
-		_y = x * v1[1] + y * v2[1] + a[1]
 		
-		for tx in range(sx):
-			for ty in range(sy):
-				xx = _x[ty][tx]
-				yy = _y[ty][tx]
-				tmp = bilinear(img,xx,yy)
-				if (tmp < 0.25*white): tmp = 0
-				if (tmp > 0.75*white): tmp = 255
-				b[ty][tx] = tmp
+		pt1 = a 
+		pt2 = a + np.array(v1)*sx
+		pt3 = a + np.array(v2)*hsy
+		pt = np.float32((pt1, pt2, pt3))
+
+		dpt1 = (0, hsy)
+		dpt2 = (sx,hsy)
+		dpt3 = (0, sy )
+		dpt = np.float32((dpt1, dpt2, dpt3))
+
+		M = cv2.getAffineTransform(pt,dpt)
+
+		b = 255-cv2.warpAffine(255-img,M,(sx,sy))
+		b[b < 0.25*white] = 0
+		b[b > 0.75*white] = 255
 
 		########## post processing ##########
 		percent5  = int(sx*0.05)

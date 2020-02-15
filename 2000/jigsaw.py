@@ -66,8 +66,7 @@ class jigsaw:
 		print('Allowed:', self.allowedOreintation)
 		if (showimage):
 			for p in self.profile:
-				inverted = (255-p)
-				plt.imshow(inverted, cmap = plt.get_cmap('gray'))
+				plt.imshow(p, cmap = plt.get_cmap('gray'))
 				plt.show()
 
 	@staticmethod
