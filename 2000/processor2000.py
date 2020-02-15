@@ -234,28 +234,64 @@ def orderByAngle(corners):
 	
 	return result
 
+def findNearestElem(elem, vals):
+	best = vals[0]
+	bestdist = abs(elem-vals[0])
+	for v in vals:
+		dist = abs(elem - v)
+		if (dist < bestdist):
+			bestdist = dist
+			best = v
+	return best
+
+def findNearestDistance(elem, vals):
+	k = findNearestElem(elem, vals)
+	return abs(k-elem)
+
+def findDistanceOnCircle(elem, vals):
+	circ = []
+	for v in vals:
+		circ.append(v-360)
+		circ.append(v)
+		circ.append(v+360)
+	
+	d = findNearestDistance(elem, circ)
+	return d
+
 def rejectNonCornerMaximas(records, maxdist):
 	# sometimes there's maximas in the bottom of the dips. Take em out.
 	records_ = []
+	angles = []
 	for r in records:
 		if r[1] > 100:
 			records_ += [r]
+			angles += [r[0]]
 		else:
-			print ('!! Rejected a suspected non-corner:', r)
+			print ('!! Rejected a suspected non-corner:', r,'for being inside a dip')
 	
 	# Continue...
 	records_ = sorted(records_,key=lambda x: x[0]) # Sort by angle
 	result = []
 	
-	for i, r in enumerate(records_):
-		prev = records_[i-1]
-		next = records_[(i+1)%len(records_)]
-		dist_from_prev = min(abs(prev[0] - r[0]), 360-abs(prev[0] - r[0]))
-		dist_from_next = min(abs(next[0] - r[0]), 360-abs(next[0] - r[0]))
-		if (dist_from_prev < maxdist and dist_from_next < maxdist):
-			print ('!! Rejected a suspected non-corner:', r)
-			continue
-		result += [r]
+	# If this is a corner, then 3 other corners should be at +90, +180 and +270 roughly speaking, as peices are mostly square-ish.
+	for r in records_:
+		ang = r[0]
+		c2 = findDistanceOnCircle(ang+90, angles)
+		c3 = findDistanceOnCircle(ang+180, angles)
+		c4 = findDistanceOnCircle(ang-90, angles) # 270
+		# Do not tolerate if more than 25 degrees away
+		if ((c2 < 25) and (c3 < 25) and (c4 < 25)):
+			result += [r]
+		else:
+			print ('!! Rejected a suspected non-corner:', r,'for not having matching coners')
+	
+	# Special case for a + peice: it will have 8 results. four corners and four knobs. Select the ones closest to diagonals.
+	if len(result) == 8:
+		print ('!! Encountered a suspicuos + shape. Guessing corners that line up with diagonals')
+		first = result[0][0]
+		if (first < 25): return result[1::2]
+		else: return result[0::2]
+
 	return result
 		
 	
@@ -488,8 +524,7 @@ def example(i):
 	x = process(i)
 	export(x)
 
-fname = '9_9'
-
+fname = '9_8'
 
 if '-debug' in sys.argv:
 	debug = True
