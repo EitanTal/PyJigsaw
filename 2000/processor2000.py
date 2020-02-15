@@ -71,21 +71,6 @@ def floodfill(img, x, y, c):
 def rgb2gray(rgb):
 	return cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
 
-def BlackenCentralPeice(img):
-	# start by inverting everything
-	img = 255 - img
-	
-	# make the surrounding area white, via tolerant floodfill:
-	# dark gray -> black
-	work = rangeconvert(img, 0, 100, 0) ######### // ! This number was found through experimentation
-	# get the flood fill mask
-	mask = make_floodfill_mask(work, 0, 0)
-	# apply the flood fill
-	whites = (mask != 0)
-	img[whites] = 255
-
-	return img
-	
 def midrange2grey(work):
 	gr = work > top
 	lr = work < bottom
@@ -466,11 +451,6 @@ def getProfiles(img, q):
 
 def imgPreprocessing(InputImg):
 	img = rgb2gray(InputImg)
-	img = BlackenCentralPeice(img)
-
-	if debug:
-		imshow(img)
-
 	return img
 	
 def process(imgnr):
