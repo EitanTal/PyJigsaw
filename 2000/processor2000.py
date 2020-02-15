@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
 import math
-import cv2
+from cv2 import cv2
 import jigsaw
 import sys
 from itertools import chain
@@ -46,6 +46,14 @@ def graphshow(a):
 	plt.plot(a)
 	plt.show()
 
+def rangeconvert(img, lower, upper, set):
+	work = np.copy(img)
+	lr = work >= lower
+	gr = work <= upper
+	m  = np.logical_and(gr,lr)
+	work[m] = set
+	return work
+
 def make_floodfill_mask(img, x, y):
 	matrix_np = np.asarray(img).astype(np.uint8)
 	mask = np.zeros(np.asarray(img.shape)+2, dtype=np.uint8)
@@ -61,181 +69,46 @@ def floodfill(img, x, y, c):
 #################### image pre-processing #####################
 	
 def rgb2gray(rgb):
-	#return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
 	return cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
 
-def dewhite(img):
-	sy,sx = img.shape
-	work = img[:]
+def BlackenCentralPeice(img):
+	# start by inverting everything
+	img = 255 - img
 	
-	for y in range(sy):
-		for x in range(sx):
-			p = work[y][x]
-			if (p > 128):    work[y][x] = 255
-	
+	# make the surrounding area white, via tolerant floodfill:
+	# dark gray -> black
+	work = rangeconvert(img, 0, 100, 0) ######### // ! This number was found through experimentation
+	# get the flood fill mask
 	mask = make_floodfill_mask(work, 0, 0)
-
-	#[mask==0] and [img==0]
-	for y in range(sy):
-		for x in range(sx):
-			if (mask[y][x] != 0):
-				img[y][x] = 0
-				
-	for y in range(sy):
-		for x in range(sx):
-			i = img[y][x]
-			i = i * 3
-			i = min(i,255)
-			i = 255 - i
-			img[y][x] = i
-	
-	return img
-
-def deexposure(img):
-	# de expose: 10x10 corner average should be 222.
-	avg = 0
-	for y in range(10):
-		for x in range(10):
-			avg += img[y][x]
-	avg = avg / 100
-	desired = 222
-	factor = desired / avg
-	img = img * factor
-		
-	return img
-	
-def clearbg(img):
-	# top    25% is Background
-	# bottom 25% is a peice inside
-	# everything else is midrange
-	sy, sx = img.shape
-	
-	#de-shadow:
-	# midrange starts after histogram intensity goes below 0.05%
-	# pixels that fall inside this range will be clipped to 64...192
-	# pixels that fall outside this range will be set to 0 or 255.
-	hist = np.histogram(img, bins=range(256))[0]
-	actualTop = 0
-	peakStarted = False
-	peakpct = 0.01 * sy * sx     #  1%
-	thrspct = 0.0005 * sy * sx   #  0.05%
-	for i in range(250,-1,-1):
-		if (hist[i] > peakpct): peakStarted = True
-		if (peakStarted and hist[i] < thrspct): 
-			actualTop = i
-			break
-
-	actualBottom = 0
-	peakStarted = False
-	for i in range(0,250):
-		if (hist[i] > peakpct): peakStarted = True
-		if (peakStarted and hist[i] < thrspct): 
-			actualBottom = i
-			break
-			
-	if (debugPreProcessing): print ('Actual top/bottom ranges: ', (actualBottom*100/256), (actualTop*100/256) )
-
-	for y in range(sy):
-		for x in range(sx):
-			p = img[y][x]
-			if (p < actualBottom or p < bottom): img[y][x] = 0
-			if (p > actualTop    or p > top):    img[y][x] = 255
+	# apply the flood fill
+	whites = (mask != 0)
+	img[whites] = 255
 
 	return img
 	
 def midrange2grey(work):
-	#work = np.where((work > bottom and work < top), white/2, work)
-	sy, sx = work.shape
-	for y in range(sy):
-		for x in range(sx):
-			p = work[y][x]
-			work[y][x] = white/2
-			if (p < bottom): work[y][x] = 0
-			if (p > top):    work[y][x] = 255
+	gr = work > top
+	lr = work < bottom
+
+	work[:] = 128
+	work[gr] = 255
+	work[lr] = 0
+
 	return work
-
-def glareElimination(img):
-	# Convert all midrange to grey
-	work = np.copy(img)
-	midrange2grey(work)
-	if debugPreProcessing: imshow(img)
-
-	# Turn all black clusters to grey except the biggest one.
-	cm = findCenter(work)
-	cm = refinecm(work, cm)
-	mask = make_floodfill_mask(work, int(cm[0]), int(cm[1]))
-
-	#[mask==0] and [img==0]
-	for y in range(sy):
-		for x in range(sx):
-			if (mask[y][x] == 0 and work[y][x] == 0):
-				work[y][x] = white/2
-				img[y][x] = white/2
-	
-	if debugPreProcessing: imshow(img)
-	
-	# Turn all grey islands within the black to black.
-	mask = np.copy(work)
-	floodfill(mask, 1, 1, 128)
-	floodfill(mask, 1, 1, 0)
-	for y in range(sy):
-		for x in range(sx):
-			if (mask[y][x] > bottom and mask[y][x] < top):
-				work[y][x] = 0
-				img[y][x] = 0
-				
-	if debugPreProcessing: imshow(img)
-	
-	# Turn all grey islands that don't touch black to white
-	mask = np.copy(work)
-	floodfill(mask, int(cm[0]), int(cm[1]), 128)
-	floodfill(mask, int(cm[0]), int(cm[1]), 0)
-	for y in range(sy):
-		for x in range(sx):
-			if (mask[y][x] > bottom and mask[y][x] < top):
-				work[y][x] = 255
-				img[y][x] = 255
-
-	if debugPreProcessing: imshow(img)
-	
-	# Turn all white islands in grey to grey			
-	mask = np.copy(work)
-	floodfill(mask, 0, 0, 128)
-	for y in range(sy):
-		for x in range(sx):
-			if (mask[y][x] == 255):
-				work[y][x] = white/2
-				img[y][x] = white/2
-	
-	return img
 	
 ##############################################################
 
 def findCenter(a):
 	# find the center of mass
 	sy, sx = a.shape
-	blacksOnly = cv2.inRange(a, 0, 1)
+	blacksPixels = cv2.inRange(a, 0, 1)
 	x, y = np.meshgrid(np.linspace(0,sx-1,sx), np.linspace(0,sy-1,sy))
-	zx = x * blacksOnly
-	zy = y * blacksOnly
-	tot =  blacksOnly.sum()
+	zx = x * blacksPixels
+	zy = y * blacksPixels
+	tot =  blacksPixels.sum()
 	xsum = zx.sum()
 	ysum = zy.sum()
 	return ( xsum / tot, ysum / tot )
-
-def refinecm(img, cm):
-	print('Center of mass:', cm)
-	
-	_y = int(cm[1])
-	_x = int(cm[0])
-
-	# cross pattern search to find a black pixel:
-	for i in range(55):
-		if (img[_y+i][_x  ] == 0): return (_x  ,_y+i)
-		if (img[_y-i][_x  ] == 0): return (_x  ,_y-i)
-		if (img[_y  ][_x+i] == 0): return (_x+i,_y  )
-		if (img[_y  ][_x-i] == 0): return (_x-i,_y  )
-	
 	
 def inbound(img, crd):
 	sy, sx = img.shape
@@ -245,7 +118,8 @@ def inbound(img, crd):
 def makeRad(a,dmax,cm):
 	degzoom = 1
 	degrees = 360
-	newimgSz = (dmax,degrees*degzoom) # 360 degrees, N units max.
+	#newimgSz = (dmax,degrees*degzoom) # 360 degrees, N units max.
+
 	b = np.zeros(degrees*degzoom)
 	for ang in range(degrees * degzoom):
 		ang_ = math.radians(ang/degzoom)
@@ -256,11 +130,10 @@ def makeRad(a,dmax,cm):
 			y1 = int(y * d + cm[1])
 			if (inbound(a,(x1,y1))):
 				v = a[y1][x1]
-			else:
-				v = 0
-			if (v == 255):
-				b[ang] = d
-				break
+				if (v == 0):
+					b[ang] = d
+					break
+
 	return b
 	
 def pad(a, num):
@@ -318,7 +191,7 @@ def findMinima(f):
 
 
 def refineCorners(img, corners):
-	for i in range(50): # maximum 50 iterations
+	for _ in range(50): # maximum 50 iterations
 		previous = corners[:]
 		refineCornersX(img, corners)
 		if (previous == corners): break
@@ -336,7 +209,7 @@ def refineCornersX(img, corners):
 	windowSzPlus = windowSzMinus+1
 	sy, sx = img.shape
 	
-	#open a 7x7 window around every point
+	#open a square window around every point
 	for i in range(4):
 		x = corners[i][0]
 		y = corners[i][1]
@@ -346,7 +219,7 @@ def refineCornersX(img, corners):
 		for _x in range(-windowSzMinus+x,windowSzPlus+x):
 			for _y in range(-windowSzMinus+y,windowSzPlus+y):
 				if _y >= sy or _x >= sx: continue
-				if (img[_y][_x] != 255): continue
+				if (img[_y][_x] != 0): continue
 				dx = _x - cm[0] 
 				dy = _y - cm[1]
 				d = dx*dx + dy*dy
@@ -401,7 +274,7 @@ def rejectNonCornerMaximas(records, maxdist):
 	return result
 		
 	
-def findCornersAndClass(img):
+def findCorners(img):
 	# Find Center of mass:
 	cm = findCenter(img)
 	if (debugGeometry):
@@ -410,7 +283,6 @@ def findCornersAndClass(img):
 	# Find Corners and Knobs:
 	b = makeRad(img, 1500, cm)
 	o = findMinima(-b)
-	knobs = len(o) - 4
 
 	# Find Dips:
 	dipThresh = b.mean() * 0.5
@@ -419,17 +291,12 @@ def findCornersAndClass(img):
 		print ('Maxima:', o)
 		print ('Minima:', minimas)
 	
-	dips = 0
 	#print ('minimas: ',minimas)
 	nextD = 0
 	for d in minimas:
 		#print ('Inspected minima: ',b[d])
 		if (b[d] < dipThresh and d > nextD): 
-			dips += 1
 			nextD = d + 60 # Next Dip expected to be opposite of this one. This is done to avoid noise.
-	
-	# Deduce peice type:
-	flats = 4 - knobs - dips
 	
 	# Locate 4 corners cartesian coordinates:
 	record = []
@@ -474,26 +341,27 @@ def findCornersAndClass(img):
 	# sometimes the order of corners get messed up.
 	corners = orderByAngle(corners)
 
-	# Debug prints:
-	print ('knobs, dips, flats: ', (knobs, dips, flats))
-	print ('Corners: ', corners)
+	if (debugGeometry):
+		print ('Candidates for corners: (Polar)', record)
+		print ('Candidates for corners: (Cartesian)', corners)
+
 	if (debugGeometry):
 		graphshow(b) # Show the rad graph.
-		img1 = img[:]
+		img1 = np.copy(img)
 		for c in corners:
 			crossSz = 5
 			for t in range(-crossSz,crossSz+1):
 				img1[c[1]+t,c[0]] = 255-img1[c[1]+t,c[0]]
 				img1[c[1],c[0]+t] = 255-img1[c[1],c[0]+t]
-		imshow(255-img1)
+		imshow(img1)
 
-	return (corners, flats)
+	return corners
 
 	
 def bilinear(img, x, y):
 	sy, sx = img.shape
-	if (sy  <= y+1) or (sx <= x+1): return 0
-	if (y   <  0  ) or (x  <    0): return 0
+	if (sy  <= y+1) or (sx <= x+1): return 255
+	if (y   <  0  ) or (x  <    0): return 255
 	iX = int(x)
 	_X = x - iX
 	nX = 1 - _X
@@ -564,7 +432,6 @@ def getProfiles(img, q):
 		_x = x * v1[0] + y * v2[0] + a[0]
 		_y = x * v1[1] + y * v2[1] + a[1]
 		
-
 		for tx in range(sx):
 			for ty in range(sy):
 				xx = _x[ty][tx]
@@ -573,7 +440,6 @@ def getProfiles(img, q):
 				if (tmp < 0.25*white): tmp = 0
 				if (tmp > 0.75*white): tmp = 255
 				b[ty][tx] = tmp
-				
 
 		########## post processing ##########
 		percent5  = int(sx*0.05)
@@ -582,24 +448,26 @@ def getProfiles(img, q):
 			hit = 5
 			for ty in range(sy):
 				if (hit > 0):
-					if (b[ty][tx] >  0): hit = hit -1				
-					if (b[ty][tx] == 255): hit = 0
+					#if (b[ty][tx] <  255): hit = hit -1				
+					if (b[ty][tx] == 0): hit = 0
 				if (hit == 0):
-					b[ty][tx] = 255
+					b[ty][tx] = 0
 					
 		mask = np.copy(b)
+		mask[0,:] = 255 # Set top line of mask to white pixels to make the floodfill continuous.
 		midrange2grey(mask)
 		floodfill(mask, 0, 0, 128)
+		floodfill(mask, 0, 0, 255)
 		floodfill(mask, 0, 0, 127)
-		b[mask!=127]=255
+		b[mask!=127]=0
 		
 		########## depth and shape analysis #################
 		mindepth = sy
 		maxdepth = 0
 		for tx in range(sx):
 			for ty in range(sy):			
-				if (b[ty][tx] != 255): maxdepth = max(maxdepth, ty)
-				if (b[ty][tx] != 0): mindepth = min(mindepth, ty)
+				if (b[ty][tx] != 0): maxdepth = max(maxdepth, ty)
+				if (b[ty][tx] == 0): mindepth = min(mindepth, ty)
 		pct_max = 100*maxdepth/sy
 		pct_min = 100*mindepth/sy
 		if ((pct_max - pct_min) < 5):     theType =  0
@@ -607,7 +475,7 @@ def getProfiles(img, q):
 		else:                             theType =  (sy-mindepth)
 
 		if debug:
-			imshow(255-b)
+			imshow(b)
 		
 		p.append(b)
 		types.append(theType)
@@ -615,20 +483,11 @@ def getProfiles(img, q):
 
 def imgPreprocessing(InputImg):
 	img = rgb2gray(InputImg)
-	if (True): #breakme
-		vimg = dewhite(img)
-	else:
-		img = deexposure(img)
+	img = BlackenCentralPeice(img)
 
-	#img = clearbg(img)
-	#imshow(img)
-	img = glareElimination(img)
-	
-	
 	if debug:
 		imshow(img)
-	# invert:
-	img = 255 - img	
+
 	return img
 	
 def process(imgnr):
@@ -640,7 +499,7 @@ def process(imgnr):
 		corners = cornerdb[imgnr]
 		print('manual corners entered for', imgnr)
 	else:
-		corners, flats = findCornersAndClass(img)
+		corners = findCorners(img)
 	q = makeQuad(corners)
 	p = getProfiles(img, q)
 	flats = sum(theType == 0 for theType in p[1])
@@ -666,7 +525,7 @@ def example(i):
 	x = process(i)
 	export(x)
 
-fname = '1_1'
+fname = '9_9'
 
 
 if '-debug' in sys.argv:
