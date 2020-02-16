@@ -6,6 +6,7 @@ from cv2 import cv2
 import jigsaw
 import sys
 from itertools import chain
+import os
 
 class Quad:
 	pass
@@ -23,6 +24,8 @@ bottom = 0.25 * white
 top    = 0.75 * white
 cornerdb = {}
 datadir = r'C:\jigsaw\data\2000\breakme'
+
+scalefactor = 0.9005 # 90.05%
 
 ################# service functions #########################
 	
@@ -271,26 +274,25 @@ def rejectNonCornerMaximas(records, maxdist):
 	
 	# Continue...
 	records_ = sorted(records_,key=lambda x: x[0]) # Sort by angle
-	result = []
-	
+
+	# Special case for a + peice: it will have 8 results. four corners and four knobs. Select the ones closest to diagonals.
+	if len(records_) == 8:
+		print ('!! Encountered a suspicuos + shape. Guessing corners that line up with diagonals')
+		first = records_[0][0]
+		if (first < 25): return records_[1::2]
+		else: return records_[0::2]
+
 	# If this is a corner, then 3 other corners should be at +90, +180 and +270 roughly speaking, as peices are mostly square-ish.
+	result = []
 	for r in records_:
 		ang = r[0]
 		c2 = findDistanceOnCircle(ang+90, angles)
 		c3 = findDistanceOnCircle(ang+180, angles)
 		c4 = findDistanceOnCircle(ang-90, angles) # 270
-		# Do not tolerate if more than 25 degrees away
-		if ((c2 < 25) and (c3 < 25) and (c4 < 25)):
+		# Do not tolerate if more than 20 degrees away
+		limit = maxdist
+		if ((c2 < limit) and (c3 < limit) and (c4 < limit)):
 			result += [r]
-		else:
-			print ('!! Rejected a suspected non-corner:', r,'for not having matching coners')
-	
-	# Special case for a + peice: it will have 8 results. four corners and four knobs. Select the ones closest to diagonals.
-	if len(result) == 8:
-		print ('!! Encountered a suspicuos + shape. Guessing corners that line up with diagonals')
-		first = result[0][0]
-		if (first < 25): return result[1::2]
-		else: return result[0::2]
 
 	return result
 		
@@ -325,11 +327,21 @@ def findCorners(img):
 		record.append((peak,b[peak]))
 	
 	# Expect non-corners to be at most 65 degrees from BOTH their 2 neighboring maximas.
-	backup = record
-	record = rejectNonCornerMaximas(record, 65)
-	if (len(record) < 4):
-		print('FindCorners: rejectNonCornerMaximas failed.')
-		record = backup
+	recordBackup = record[:]
+	tryThese = [25, 20, 35, 18, 37]
+
+	for t in tryThese:
+		record = recordBackup[:]
+		tried = rejectNonCornerMaximas(record, t)
+		if (len(tried) == 4):
+			record = tried
+			if (debugGeometry):	print ('rejectNonCornerMaximas success at', t)
+			break
+		else:
+			if (debugGeometry):	print ('rejectNonCornerMaximas fail at', t,'records:',len(tried))
+	else:
+		print('!! rejectNonCornerMaximas failed.')
+		record = recordBackup[:]
 	
 	# Sort by distance.
 	# keep the lowest four, they are the corners.
@@ -353,8 +365,8 @@ def findCorners(img):
 		corners.append((x,y))
 
 	if (debugGeometry):
-		print ('Candidates for corners: (Polar)', record)
-		print ('Candidates for corners: (Cartesian)', corners)
+		print ('(pre refine) Candidates for corners: (Polar)', record)
+		print ('(pre refine) Candidates for corners: (Cartesian)', corners)
 
 	# Increase accuracy of corners' locations.
 	refineCorners(img, corners)
@@ -434,16 +446,20 @@ def getProfiles(img, q):
 		pt3 = a + np.array(v2)*hsy
 		pt = np.float32((pt1, pt2, pt3))
 
-		dpt1 = (0, hsy)
-		dpt2 = (sx,hsy)
-		dpt3 = (0, sy )
+		dpt1 = (0, hsy*scalefactor)
+		dpt2 = (sx*scalefactor,hsy*scalefactor)
+		dpt3 = (0, sy*scalefactor )
 		dpt = np.float32((dpt1, dpt2, dpt3))
 
 		M = cv2.getAffineTransform(pt,dpt)
 
-		b = 255-cv2.warpAffine(255-img,M,(sx,sy))
+		b = 255-cv2.warpAffine(255-img,M,(int(sx*scalefactor),int(sy*scalefactor)))
 		b[b < 0.25*white] = 0
 		b[b > 0.75*white] = 255
+
+		# update sx, sy:
+		sx = b.shape[0]
+		sy = sx
 
 		########## post processing ##########
 		percent5  = int(sx*0.05)
@@ -491,8 +507,8 @@ def imgPreprocessing(InputImg):
 	
 def determinetype(gauge):
 	classes = {
-		'00++':'=', '00-+':'=','00+-':'=','00--':'=', # corners
-		'0---':'0', '0+++':'3','0--+':'>','0+--':'<','0-++':'>','0++-':'<','0-+-':'a','0+-+':'a', # edges
+		'00++':'-', '00-+':'-','00+-':'-','00--':'-', # corners
+		'0---':'0', '0+++':'3','0--+':']','0+--':'[','0-++':']','0++-':'[','0-+-':'v','0+-+':'w', # edges
 		'+-+-':'A', # classic puzzle peice
 		'++--':'B', # B-type puzzle peice
 		'++++':'+', # plus-type
@@ -533,7 +549,18 @@ def process(imgnr):
 	x.types = p[1]
 	x.p = p[0]
 	x.id = imgnr
+
+	#apply scale factor to side lens:
+	x.q.sideLen[0] *= scalefactor
+	x.q.sideLen[1] *= scalefactor
+	x.q.sideLen[2] *= scalefactor
+	x.q.sideLen[3] *= scalefactor
+
 	print('Peice Type:', determinetype(x.types), 'ID:',imgnr)
+	cmd = ' '.join(['copy', r'C:\jigsaw\data\2000\breakme'+'\\'+imgnr+'.png',r'C:\jigsaw\data\2000\breakme'+'\\'+determinetype(x.types)])
+	print(cmd)
+	os.system(cmd)
+	
 	return x
 	
 def export(xjig):
@@ -548,7 +575,7 @@ def example(i):
 	x = process(i)
 	export(x)
 
-fname = '9_8'
+fname = '13_22'
 
 if '-debug' in sys.argv:
 	debug = True
@@ -563,5 +590,5 @@ if '-debuggeo' in sys.argv:
 
 if len(sys.argv) >= 2: 
 	fname = sys.argv[1]
-if '.jpg' in fname: fname = fname[:-4]
+if '.png' in fname: fname = fname[:-4]
 example(fname.replace('\\','/'))
