@@ -9,9 +9,47 @@ import time
 import numpy as np
 
 datadir = r'C:\jigsaw\data\2000'
-exitFlag = 0
 
-#sizecomp = 3.5  # shrink boxart sizes by 3.5%
+######### THREAD STUFF #############
+threadList = ["Thread-1", "Thread-2", "Thread-3","Thread-4", "Thread-5", "Thread-6"]
+exitFlag = 0
+queueLock = threading.Lock()
+workQueue = queue.Queue(0)
+resultQueue = queue.Queue(0)
+
+cutoffScore = 3000
+cutoffTotal = 10000
+
+class myThread (threading.Thread):
+   def __init__(self, threadID, name, q):
+      threading.Thread.__init__(self)
+      self.threadID = threadID
+      self.name = name
+      self.q = q
+   def run(self):
+      #print ("Starting " + self.name)
+      process_data(self.name, self.q)
+      #print ("Exiting " + self.name)
+
+def process_data(threadName, q):
+	while not exitFlag:
+		queueLock.acquire()
+		if not workQueue.empty():
+			data = q.get()
+			queueLock.release()
+			p_profile, q_profile, p_gauge, q_gauge, qid, rot, geoscore = data
+			print ("%s processing %s" % (threadName, qid))
+			fitscore = fitter2000.fitProfileToItself(p_profile, q_profile, p_gauge, q_gauge)
+			if (fitscore > cutoffScore): fitscore = cutoffTotal
+			result = [qid, rot, fitscore, geoscore]
+			queueLock.acquire()
+			resultQueue.put(result)
+			queueLock.release()
+		else:
+			queueLock.release()
+		time.sleep(0.01)
+################################
+
 
 def main():
 	database = getdb()
@@ -87,10 +125,20 @@ def findit(p, database):
 
 	# slow FITTER match:
 	scoreSoFar = {}
-	cutoffScore = 3000
-	cutoffTotal = 10000 # // !
+	#cutoffScore = 3000
+	#cutoffTotal = 10000
 	for side in range(4):
+		# Create threads.
+		threads = []
+		global exitFlag
+		exitFlag = 0
+		for threadID, tName in enumerate(threadList):
+			thread = myThread(threadID+1, tName, workQueue)
+			thread.start()
+			threads.append(thread)
+
 		# (LOCK jobs queue)
+		queueLock.acquire()
 		jobs = []
 		for qid,geoscore,rot in geomatch:
 			full_id = qid + '@' + str(rot)
@@ -101,21 +149,32 @@ def findit(p, database):
 				p.orient(rot)
 				job = [np.copy(p.profile[side]),q.profile[side],p.sidetype[side],q.sidetype[side], q.id, rot, geoscore]
 				jobs += [job]
+				workQueue.put(job)
+		queueLock.release()
 		# (UNLOCK)
 
 		# (RUN populate job_results)
-		job_results = []
-		for j in jobs:
-			p_profile, q_profile, p_gauge, q_gauge, qid, rot, geoscore = j
-			fitscore = fitter2000.fitProfileToItself(p_profile, q_profile, p_gauge, q_gauge)
-			if (fitscore > cutoffScore): fitscore = cutoffTotal
-			result = [qid, rot, fitscore, geoscore]
-			job_results += [result]
+		if (0):
+			job_results = []
+			for j in jobs:
+				p_profile, q_profile, p_gauge, q_gauge, qid, rot, geoscore = j
+				fitscore = fitter2000.fitProfileToItself(p_profile, q_profile, p_gauge, q_gauge)
+				if (fitscore > cutoffScore): fitscore = cutoffTotal
+				result = [qid, rot, fitscore, geoscore]
+				job_results += [result]
+
+		while not workQueue.empty():
+   			time.sleep(1) #pass
+		exitFlag = 1
+		for t in threads:
+			t.join()		
 		# (END-RUN. WAIT FOR FINISH)
 
 		# (PARSE RESULTS)
 		matches = []
-		for jr in job_results:
+		#for jr in job_results:
+		while not resultQueue.empty():
+			jr = resultQueue.get()
 			qid, rot, fitscore, geoscore = jr
 			full_id = qid + '@' + str(rot)
 			ssf = 0 if full_id not in scoreSoFar.keys() else scoreSoFar[full_id]
