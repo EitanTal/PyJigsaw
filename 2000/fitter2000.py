@@ -12,57 +12,22 @@ def imshow(a):
 	plt.imshow(a, cmap = plt.get_cmap('gray'))
 	plt.show()
 
-def determineMinGauge(img):
-	sy, sx = img.shape
-	mindepth = sy
-	for tx in range(sx):
-		for ty in range(sy):			
-			if (img[ty][tx] != 0): mindepth = min(mindepth, ty)
-	return mindepth
+def QuickYNudge(a, b, gA, gB):
+	# if B image is bigger, it needs to move UP
+	sizecomp = -(a.shape[0] - b.shape[0])
 
-def determineMinGauge1(img):
-	sy, sx = img.shape
-	mindepth = sy
-	for tx in range(sx):
-		for ty in range(sy):			
-			if (img[ty][tx] != 255): mindepth = min(mindepth, ty)
-	return mindepth
+	# gauge diff: abs(gauge a) - abs(gauge b)
+	gd = abs(gA) - abs(gB)
 
-def QuickYNudge_slow(a, b):
-	syA, sxA = a.shape
-	hA = syA - determineMinGauge(a)
-	hB = determineMinGauge1(b)
-	yNudge = syA - (hA + hB + 1)
-	if (Debug):
-		print ('Height of knob:', hA, '@ y=', syA - hA)
-		print ('Height of Dip:', hB, '@ y=', hB)
-		print ('Height of A:', syA)
-		print ('yNudge:', yNudge)
-	return yNudge
+	# image B needs to move UP if gD is positive, and DOWN if negative.
+	gcomp = gd
 
-def QuickYNudge(a, gA, gB):
-	syA, sxA = a.shape
-	hA = gA
-	hB = -gB
-	yNudge = syA - (hA + hB)
-	if (StepsDebug):
-		print ('Height of knob:', hA, '@ y=', syA - hA)
-		print ('Height of Dip:', hB, '@ y=', hB)
-		print ('Height of A:', syA)
-		print ('yNudge:', yNudge)
+	yNudge = -(sizecomp + gcomp)
+
 	return int(yNudge)
 
-# a is the knob, b is the dip.
-def fitProfiles(a, b, ga, gb, _debug=False):
-	if (ga > 0):
-		return fitProfilesEx(a, b, ga, gb, _debug)
-	else:
-		return fitProfilesEx(b, a, gb, ga, _debug)
-
-def fitProfilesEx(a, b, ga, gb, _debug=False):
-	# B side adjustment:
-	b180 = np.rot90(b, 2) # rotate profile b by 180 degrees
-	yNudge = QuickYNudge(a, ga, gb)
+def fitProfileToItself(cam, boxart, cam_g, boxart_g, _debug=False):
+	yNudge = QuickYNudge(cam, boxart, cam_g, boxart_g)
 	
 	maxNudge = 15
 
@@ -74,42 +39,42 @@ def fitProfilesEx(a, b, ga, gb, _debug=False):
 	up    = np.array([0, -1])
 	
 	#check
-	baseScore = fitProfiles_internal(a, b180, nudge)
+	baseScore = fitProfiles_internal(cam, boxart, nudge)
 	lastScore = baseScore
 	
 	# try moving left:
-	newScore = fitProfiles_internal(a, b180, nudge+left)
+	newScore = fitProfiles_internal(cam, boxart, nudge+left)
 	# good? continue.
 	if (newScore < baseScore):
 		lastScore = baseScore
 		while (newScore < lastScore):
 			nudge = nudge + left
 			lastScore = newScore
-			newScore = fitProfiles_internal(a, b180, nudge+left)
+			newScore = fitProfiles_internal(cam, boxart, nudge+left)
 			if np.any(abs(nudge) >= maxNudge): break
 	else: # Bad? try moving the other direction
-		newScore = fitProfiles_internal(a, b180, nudge+right)
+		newScore = fitProfiles_internal(cam, boxart, nudge+right)
 		if (newScore < baseScore):
 			lastScore = baseScore
 			while (newScore < lastScore):
 				nudge = nudge + right
 				lastScore = newScore
-				newScore = fitProfiles_internal(a, b180, nudge+right)
+				newScore = fitProfiles_internal(cam, boxart, nudge+right)
 				if np.any(abs(nudge) >= maxNudge): break
 
 	# try moving up:
-	newScore = fitProfiles_internal(a, b180, nudge+up)
+	newScore = fitProfiles_internal(cam, boxart, nudge+up)
 	if (newScore < lastScore):
 		lastScore = lastScore
 		while (newScore < lastScore):
 			nudge = nudge + up
 			lastScore = newScore
-			newScore = fitProfiles_internal(a, b180, nudge+up)
+			newScore = fitProfiles_internal(cam, boxart, nudge+up)
 
 	if (Debug or _debug):
 		print( 'Nudge:', nudge)
 		print( 'Fit rating:', int(lastScore*100))
-		fitProfiles_internal(a, b180, nudge, True)
+		fitProfiles_internal(cam, boxart, nudge, True)
 
 	return int(lastScore*100)
 
@@ -167,19 +132,24 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	r[b==0]              |= 32
 	
 	# scoring:
-	# Bits 0 and 3 will score +1 overlap.                                ( 9)
-	# Bits 1 and 3 will score +1 overlap. (less severe black-on-gray)    (10)
-	# Bits 0 and 4 will score +1 overlap. (less severe black-on-gray)    (17)
-	# Bits 5 and 2 will score +1 gap.                                    (36)
-	# White-on-midrange is allowed
-	# Midrange-on-midrange is allowed.
+	# Black pixel from A on a black pixel from B:   0
+	# Black pixel from A on a grey  pixel from B:   1
+	# Black pixel from A on a white pixel from B:   3
+	# White pixel from A on a black pixel from B:   3
+	# White pixel from A on a grey  pixel from B:   0
+	# White pixel from A on a white pixel from B:   0
+	# White pixel from A on a N/A   pixel from B:   0
+
+
+	# Bits 0 and 4 will score +1 overlap.     (1+16)
+	# Bits 0 and 5 will score +3 overlap.     (1+32)
+	# Bits 2 and 3 will score +3 overlap.     (4+8)
 	# Bits 012 without 345 is allowed. (nudges, offsets, size differences, etc)
 	
 	score = 0
-	score += np.sum((r &  9) ==  9)
-	score += np.sum((r & 10) == 10)
 	score += np.sum((r & 17) == 17)
-	score += np.sum((r & 36) == 36)
+	score += (np.sum((r & 33) == 33)*3)
+	score += (np.sum((r & 12) == 12)*3)
 
 	# Score normalize:
 	score = score / sx
@@ -189,25 +159,3 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	if (StepsDebug or show):
 		imshow(r)
 	return score
-
-if __name__ == '__main__':
-	Debug = True
-	profile1 = 'a1b'
-	profile1_orientation = 1
-	profile2 = 'a1a'
-	profile2_orientation = 1
-	
-	if len(sys.argv) >= 5:
-		profile1 = sys.argv[1]
-		profile1_orientation = int(sys.argv[2])
-		profile2 = sys.argv[3]
-		profile2_orientation = int(sys.argv[4])
-	
-	j1 = jigsaw.jigsaw.load(profile1)
-	j1.orient(profile1_orientation)
-	
-	j2 = jigsaw.jigsaw.load(profile2)
-	j2.orient(profile2_orientation)
-	
-	fitProfiles(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
-	
