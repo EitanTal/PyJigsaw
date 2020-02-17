@@ -33,8 +33,8 @@ def fitProfileToItself(cam, boxart, cam_g, boxart_g, _debug=False):
 	defaultNudge = [0, yNudge] # X: + is right, - is left. Y: + is down, - is up
 	nudge = np.array(defaultNudge)
 	
-	left = np.array([-1, 0])
-	right = np.array([1, 0])
+	left = np.array([-2, 0])
+	right = np.array([2, 0])
 	up    = np.array([0, -1])
 	down  = np.array([0, 1])
 	
