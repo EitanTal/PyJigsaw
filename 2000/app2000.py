@@ -21,15 +21,13 @@ cutoffScore = 3000
 cutoffTotal = 10000
 
 class myThread (threading.Thread):
-   def __init__(self, threadID, name, q):
-      threading.Thread.__init__(self)
-      self.threadID = threadID
-      self.name = name
-      self.q = q
-   def run(self):
-      #print ("Starting " + self.name)
-      process_data(self.name, self.q)
-      #print ("Exiting " + self.name)
+	def __init__(self, threadID, name, q):
+		threading.Thread.__init__(self)
+		self.threadID = threadID
+		self.name = name
+		self.q = q
+	def run(self):
+		process_data(self.name, self.q)
 
 def process_data(threadName, q):
 	while not exitFlag:
@@ -38,7 +36,7 @@ def process_data(threadName, q):
 			data = q.get()
 			queueLock.release()
 			p_profile, q_profile, p_gauge, q_gauge, qid, rot, geoscore = data
-			print ("%s processing %s" % (threadName, qid))
+			#print ("%s processing %s" % (threadName, qid))
 			fitscore = fitter2000.fitProfileToItself(p_profile, q_profile, p_gauge, q_gauge)
 			if (fitscore > cutoffScore): fitscore = cutoffTotal
 			result = [qid, rot, fitscore, geoscore]
@@ -51,19 +49,39 @@ def process_data(threadName, q):
 ################################
 
 
+
+
 def main():
 	database = getdb()
+	video = cv2.VideoCapture(0)
+	nohist = time.time()
+	font = cv2.FONT_HERSHEY_SIMPLEX
+
 	while True:
-		wait4histogram()
-		delay()
-		img = capture()
+		check,img = video.read()
+		hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+		if (wait4histogram(hsv)):
+			cv2.putText(img, 'No peice detected', (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
+			cv2.imshow('Webcam view', img)
+			#time.sleep(0.1)
+			cv2.waitKey(1)
+			nohist = time.time()
+			continue
+		d = time.time() - nohist
+		if (d < 3): # allow 3 seconds for alignment following histogram match confirmation
+			cv2.putText(img, 'Capture in '+str(3-int(d)), (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
+			cv2.imshow('Webcam view', img)
+			#time.sleep(0.1)
+			cv2.waitKey(1)
+			continue
+		check,img = video.read()
 		p = processor2000.process_cam(img)
 		x = findit(p, database)
 		if (x): saveAndRemove(x, img, database)
 
 def getdb():
-	fnames = os.listdir(datadir + '\\' + 'npz')
-	#fnames = os.listdir(datadir + '\\' + 'npz_tst_1')
+	#fnames = os.listdir(datadir + '\\' + 'npz')
+	fnames = os.listdir(datadir + '\\' + 'npz_tst')
 	solved = os.listdir(datadir + '\\' + 'cam')
 	npz = []
 	for a in fnames:
@@ -76,11 +94,12 @@ def getdb():
 	print ('Loaded',len(npz),'peices from Database.')
 	return npz
 
-def wait4histogram():
-	return 0
-
-def delay():
-	return 0
+def wait4histogram(hsv):
+	h,s,v = cv2.split(hsv)
+	blacksPixels = cv2.inRange(s, 0, 128)
+	tot =  blacksPixels.sum() / 255
+	pct = tot / (h.shape[0]*h.shape[1])
+	return (pct < 0.60)
 
 def capture():
 	filename = r"C:\jigsaw\2000\rgb.png"
@@ -128,6 +147,7 @@ def findit(p, database):
 	#cutoffScore = 3000
 	#cutoffTotal = 10000
 	for side in range(4):
+		print (side*25,'%','done')
 		# Create threads.
 		threads = []
 		global exitFlag
@@ -164,7 +184,7 @@ def findit(p, database):
 				job_results += [result]
 
 		while not workQueue.empty():
-   			time.sleep(1) #pass
+   			time.sleep(1)
 		exitFlag = 1
 		for t in threads:
 			t.join()		
