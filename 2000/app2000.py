@@ -5,6 +5,7 @@ import jigsaw
 import os
 
 datadir = r'C:\jigsaw\data\2000'
+#sizecomp = 3.5  # shrink boxart sizes by 3.5%
 
 def main():
 	database = getdb()
@@ -18,7 +19,8 @@ def main():
 		break
 
 def getdb():
-	fnames = os.listdir(datadir + '\\' + 'npz_tst')
+	fnames = os.listdir(datadir + '\\' + 'npz')
+	#fnames = os.listdir(datadir + '\\' + 'npz_tst_1')
 	solved = os.listdir(datadir + '\\' + 'cam')
 	npz = []
 	for a in fnames:
@@ -38,7 +40,8 @@ def delay():
 	return 0
 
 def capture():
-	filename = r"C:\jigsaw\2000\rgb.png"
+	#filename = r"C:\jigsaw\2000\rgb.png"
+	filename = r"C:\jigsaw\data\2000\t2.jpg"
 	return cv2.imread(filename)
 
 def typeAgrees(t1, t2):
@@ -48,41 +51,55 @@ def typeAgrees(t1, t2):
 	return False
 
 def findit(p, database):
-	cutoffLenScore = 16
-	cutoffAngScore = 5
-	cutoffGauge = 15
-	cutoffScore = 1984
-	matches = []
+	cutoffLenScore = 64
+	cutoffAngScore = 10
+	cutoffGauge = 60
+	cutoffGeoScore = 1984
 
-	for rot in range(4):
-		for q in database:
+	# fast GEO match:
+	geomatch = []
+	for q in database:
+		for rot in range(4):
 			p.orient(rot)
 			geoscore = 0
-			diffscore = 0
 			for side in range(4):
+				camlen = p.sidelen[side] * 1.035
 				# sanity: check that types match up
 				if not typeAgrees(p.sidetype[side], q.sidetype[side]): break
 				# geo: check that side lens and angles roughly match up
-				len_diff = abs(p.sidelen[side] - q.sidelen[side])
+				len_diff = abs(camlen - q.sidelen[side])
 				ang_diff = abs(p.ang[side] - q.ang[side])
 				if (len_diff > cutoffLenScore): break
 				if (ang_diff > cutoffAngScore): break
 				# gauge: check that gauge roughly matches up
 				gauge_diff = abs(p.sidetype[side] - q.sidetype[side])
+				geoscore += ang_diff + len_diff
 				if (gauge_diff > cutoffGauge): break
-				# fitter analysis score...
+			else:
+				if (geoscore > cutoffGeoScore): continue
+				match = [q.id, geoscore, rot]
+				geomatch += [match]
+
+	# slow FITTER match:
+	matches = []
+	cutoffScore = 5000
+	for qid,geoscore,rot in geomatch:
+		for q in database:
+			if (qid != q.id): continue
+			diffscore = 0
+			p.orient(rot)
+			for side in range(4):
 				score = fitter2000.fitProfileToItself(p.profile[side],q.profile[side],p.sidetype[side],q.sidetype[side])
 				if (score > cutoffScore): break
-				geoscore += 1984
 				diffscore += score
 			else:
-				match = [p.id, diffscore, geoscore]
+				match = [q.id, diffscore, geoscore]
 				matches += [match]
 
 	matches = sorted(matches,key=lambda x: x[1])
 	if (len(matches) == 0): print ('-- No Matches --')
 	for i,elem in enumerate(matches):
-		print( i,': ', elem[0], '  \t(',elem[1],')', '  \t(',elem[2],elem[3],')' )
+		print( i,': ', elem[0], '  \t(',elem[1],')', '  \t(',elem[2],')' )
 
 	cmdline = input(">").strip()
 	if (cmdline.isnumeric()):

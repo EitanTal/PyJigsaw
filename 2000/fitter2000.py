@@ -13,16 +13,15 @@ def imshow(a):
 	plt.show()
 
 def QuickYNudge(a, b, gA, gB):
-	# if B image is bigger, it needs to move UP
-	sizecomp = -(a.shape[0] - b.shape[0])
+	# p: the pixel that the tip of the gauge touches, be it the tip of the knob or the pit of the dip
+	pa = a.shape[0] - gA
+	pb = b.shape[0] - gB
 
-	# gauge diff: abs(gauge a) - abs(gauge b)
-	gd = abs(gA) - abs(gB)
-
-	# image B needs to move UP if gD is positive, and DOWN if negative.
-	gcomp = gd
-
-	yNudge = -(sizecomp + gcomp)
+	# after nudge, the two images must line up on P.
+	# nudge is a vector applied to B.
+	# pa = pb + N
+	# N = pa - pb
+	yNudge = pa-pb
 
 	return int(yNudge)
 
@@ -37,6 +36,7 @@ def fitProfileToItself(cam, boxart, cam_g, boxart_g, _debug=False):
 	left = np.array([-1, 0])
 	right = np.array([1, 0])
 	up    = np.array([0, -1])
+	down  = np.array([0, 1])
 	
 	#check
 	baseScore = fitProfiles_internal(cam, boxart, nudge)
@@ -51,7 +51,7 @@ def fitProfileToItself(cam, boxart, cam_g, boxart_g, _debug=False):
 			nudge = nudge + left
 			lastScore = newScore
 			newScore = fitProfiles_internal(cam, boxart, nudge+left)
-			if np.any(abs(nudge) >= maxNudge): break
+			if (abs(nudge[0]) >= maxNudge): break
 	else: # Bad? try moving the other direction
 		newScore = fitProfiles_internal(cam, boxart, nudge+right)
 		if (newScore < baseScore):
@@ -60,16 +60,16 @@ def fitProfileToItself(cam, boxart, cam_g, boxart_g, _debug=False):
 				nudge = nudge + right
 				lastScore = newScore
 				newScore = fitProfiles_internal(cam, boxart, nudge+right)
-				if np.any(abs(nudge) >= maxNudge): break
+				if (abs(nudge[0]) >= maxNudge): break
 
-	# try moving up:
-	newScore = fitProfiles_internal(cam, boxart, nudge+up)
+	# try moving down:
+	newScore = fitProfiles_internal(cam, boxart, nudge+down)
 	if (newScore < lastScore):
 		lastScore = lastScore
 		while (newScore < lastScore):
-			nudge = nudge + up
+			nudge = nudge + down
 			lastScore = newScore
-			newScore = fitProfiles_internal(cam, boxart, nudge+up)
+			newScore = fitProfiles_internal(cam, boxart, nudge+down)
 
 	if (Debug or _debug):
 		print( 'Nudge:', nudge)

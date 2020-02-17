@@ -27,6 +27,7 @@ datadir = r'C:\jigsaw\data\2000\breakme'
 
 scalefactor = 0.9005 # 90.05%
 scalefactorCam = 1.000
+#scalefactorCam = 1.035  # make camera bigger by 3.5%
 
 ################# service functions #########################
 	
