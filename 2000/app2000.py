@@ -3,8 +3,14 @@ import fitter2000
 from cv2 import cv2
 import jigsaw
 import os
+import queue
+import threading
+import time
+import numpy as np
 
 datadir = r'C:\jigsaw\data\2000'
+exitFlag = 0
+
 #sizecomp = 3.5  # shrink boxart sizes by 3.5%
 
 def main():
@@ -80,20 +86,48 @@ def findit(p, database):
 				geomatch += [match]
 
 	# slow FITTER match:
-	matches = []
+	scoreSoFar = {}
 	cutoffScore = 3000
+	cutoffTotal = 10000 # // !
+	for side in range(4):
+		# (LOCK jobs queue)
+		jobs = []
+		for qid,geoscore,rot in geomatch:
+			full_id = qid + '@' + str(rot)
+			if (full_id in scoreSoFar.keys() and scoreSoFar[full_id] > cutoffTotal): continue
+			for q in database:
+				if (qid != q.id): continue
+				diffscore = 0
+				p.orient(rot)
+				job = [np.copy(p.profile[side]),q.profile[side],p.sidetype[side],q.sidetype[side], q.id, rot, geoscore]
+				jobs += [job]
+		# (UNLOCK)
+
+		# (RUN populate job_results)
+		job_results = []
+		for j in jobs:
+			p_profile, q_profile, p_gauge, q_gauge, qid, rot, geoscore = j
+			fitscore = fitter2000.fitProfileToItself(p_profile, q_profile, p_gauge, q_gauge)
+			if (fitscore > cutoffScore): fitscore = cutoffTotal
+			result = [qid, rot, fitscore, geoscore]
+			job_results += [result]
+		# (END-RUN. WAIT FOR FINISH)
+
+		# (PARSE RESULTS)
+		matches = []
+		for jr in job_results:
+			qid, rot, fitscore, geoscore = jr
+			full_id = qid + '@' + str(rot)
+			ssf = 0 if full_id not in scoreSoFar.keys() else scoreSoFar[full_id]
+			ssf += fitscore
+			scoreSoFar[full_id] = ssf
+
 	for qid,geoscore,rot in geomatch:
-		for q in database:
-			if (qid != q.id): continue
-			diffscore = 0
-			p.orient(rot)
-			for side in range(4):
-				score = fitter2000.fitProfileToItself(p.profile[side],q.profile[side],p.sidetype[side],q.sidetype[side])
-				if (score > cutoffScore): break
-				diffscore += score
-			else:
-				match = [q.id, diffscore, geoscore]
-				matches += [match]
+		full_id = qid + '@' + str(rot)
+		diffscore = scoreSoFar[full_id] 
+		if (diffscore < cutoffTotal):
+			match = [qid, diffscore, geoscore]
+			matches += [match]
 
 	matches = sorted(matches,key=lambda x: x[1])
 	if (len(matches) == 0): print ('-- No Matches --')
