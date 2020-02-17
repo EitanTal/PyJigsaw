@@ -261,6 +261,29 @@ def findDistanceOnCircle(elem, vals):
 	d = findNearestDistance(elem, circ)
 	return d
 
+def selectDiagonalConers(records):
+	angles = []
+	for r in records:
+		if r[1] > 100:
+			angles += [r[0]]
+	a = [0,0,0,0]
+	a[0] = findNearestElem(45, angles)
+	a[1] = findNearestElem(135, angles)
+	a[2] = findNearestElem(225, angles)
+	a[3] = findNearestElem(315, angles)
+	
+	# duplicates?
+	if len(set(a)) != 4: #FAIL
+		print('!! selectDiagonalConers FAIL')
+		return records
+		
+	result = []
+	for r in records:
+		if r[0] in a:
+			result += [r]
+	return result
+	
+
 def rejectNonCornerMaximas(records, maxdist):
 	# sometimes there's maximas in the bottom of the dips. Take em out.
 	records_ = []
@@ -329,6 +352,7 @@ def findCorners(img):
 	# Expect non-corners to be at most 65 degrees from BOTH their 2 neighboring maximas.
 	recordBackup = record[:]
 	tryThese = [25, 20, 35, 18, 37]
+	#tryThese = [20]
 
 	for t in tryThese:
 		record = recordBackup[:]
@@ -341,7 +365,10 @@ def findCorners(img):
 			if (debugGeometry):	print ('rejectNonCornerMaximas fail at', t,'records:',len(tried))
 	else:
 		print('!! rejectNonCornerMaximas failed.')
-		record = recordBackup[:]
+		record = selectDiagonalConers(recordBackup)
+		
+		#record = recordBackup[:]
+	
 	
 	# Sort by distance.
 	# keep the lowest four, they are the corners.

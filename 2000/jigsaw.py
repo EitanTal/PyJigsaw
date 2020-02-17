@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 
-workdir = r'C:\jigsaw\data'
+workdir = r'C:\jigsaw\data\2000\npz'
 
 
 def rotate(l, n):
@@ -62,8 +62,6 @@ class jigsaw:
 		print('Types:  ', self.sidetype)
 		print('Angles: ', self.ang)
 		print('id:     ', self.id)
-		print('Orient: ', self.north)
-		print('Allowed:', self.allowedOreintation)
 		if (showimage):
 			for p in self.profile:
 				plt.imshow(p, cmap = plt.get_cmap('gray'))
