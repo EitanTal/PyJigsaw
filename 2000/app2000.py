@@ -16,7 +16,6 @@ def main():
 		p = processor2000.process_cam(img)
 		x = findit(p, database)
 		if (x): saveAndRemove(x, img, database)
-		break
 
 def getdb():
 	fnames = os.listdir(datadir + '\\' + 'npz')
@@ -40,8 +39,8 @@ def delay():
 	return 0
 
 def capture():
-	#filename = r"C:\jigsaw\2000\rgb.png"
-	filename = r"C:\jigsaw\data\2000\t2.jpg"
+	filename = r"C:\jigsaw\2000\rgb.png"
+	#filename = r"C:\jigsaw\data\2000\t1.jpg"
 	return cv2.imread(filename)
 
 def typeAgrees(t1, t2):
@@ -53,8 +52,8 @@ def typeAgrees(t1, t2):
 def findit(p, database):
 	cutoffLenScore = 64
 	cutoffAngScore = 10
-	cutoffGauge = 60
-	cutoffGeoScore = 1984
+	cutoffGauge = 15
+	cutoffGeoScore = 200
 
 	# fast GEO match:
 	geomatch = []
@@ -82,7 +81,7 @@ def findit(p, database):
 
 	# slow FITTER match:
 	matches = []
-	cutoffScore = 5000
+	cutoffScore = 3000
 	for qid,geoscore,rot in geomatch:
 		for q in database:
 			if (qid != q.id): continue
@@ -104,6 +103,8 @@ def findit(p, database):
 	cmdline = input(">").strip()
 	if (cmdline.isnumeric()):
 		return matches[int(cmdline)][0]
+	elif cmdline == 'q':
+		exit(1)
 	else:
 		return None
 
