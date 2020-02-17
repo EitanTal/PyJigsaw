@@ -26,6 +26,7 @@ cornerdb = {}
 datadir = r'C:\jigsaw\data\2000\breakme'
 
 scalefactor = 0.9005 # 90.05%
+scalefactorCam = 1.000
 
 ################# service functions #########################
 	
@@ -448,7 +449,7 @@ def makeQuad(corners):
 	q.crnrAng  = crnrAng
 	return q
 	
-def getProfiles(img, q):
+def getProfiles(img, q, sf):
 	p = []
 	types = []
 	for i in range(4):
@@ -473,14 +474,14 @@ def getProfiles(img, q):
 		pt3 = a + np.array(v2)*hsy
 		pt = np.float32((pt1, pt2, pt3))
 
-		dpt1 = (0, hsy*scalefactor)
-		dpt2 = (sx*scalefactor,hsy*scalefactor)
-		dpt3 = (0, sy*scalefactor )
+		dpt1 = (0, hsy*sf)
+		dpt2 = (sx*sf,hsy*sf)
+		dpt3 = (0, sy*sf )
 		dpt = np.float32((dpt1, dpt2, dpt3))
 
 		M = cv2.getAffineTransform(pt,dpt)
 
-		b = 255-cv2.warpAffine(255-img,M,(int(sx*scalefactor),int(sy*scalefactor)))
+		b = 255-cv2.warpAffine(255-img,M,(int(sx*sf),int(sy*sf)))
 		b[b < 0.25*white] = 0
 		b[b > 0.75*white] = 255
 
@@ -528,9 +529,17 @@ def getProfiles(img, q):
 		types.append(theType)
 	return (p, types)
 
-def imgPreprocessing(InputImg):
-	img = rgb2gray(InputImg)
-	return img
+def Preprocessing_cam(InputImg):
+	hsv = cv2.cvtColor(InputImg, cv2.COLOR_BGR2HSV)
+	h,s,v = cv2.split(hsv)
+
+	# do nothing with h and v
+	
+	# 50% on S: BLACK pixel
+	m2 = cv2.inRange(s, 128, 255) # Sat is HIGH
+	
+
+	return m2
 	
 def determinetype(gauge):
 	classes = {
@@ -555,10 +564,10 @@ def determinetype(gauge):
 			return classes[k]
 	return '?'
 
-def process(imgnr):
+def process_boxart(imgnr):
 	filename = datadir+'\\'+str(imgnr)+".png"
-	imgTmp = cv2.imread(filename)
-	img = imgPreprocessing(imgTmp)
+	imgRgb = cv2.imread(filename)
+	img = rgb2gray(imgRgb)
 	x = xjigsaw()
 	if imgnr in cornerdb.keys():
 		corners = cornerdb[imgnr]
@@ -566,7 +575,7 @@ def process(imgnr):
 	else:
 		corners = findCorners(img)
 	q = makeQuad(corners)
-	p = getProfiles(img, q)
+	p = getProfiles(img, q, scalefactor)
 	flats = sum(theType == 0 for theType in p[1])
 	#print( 'actual flats:', flats )
 	
@@ -589,6 +598,16 @@ def process(imgnr):
 	os.system(cmd)
 	
 	return x
+
+def process_cam(imgTmp):
+	sf = scalefactorCam
+	img = Preprocessing_cam(imgTmp) # 1 Preprocessing
+	corners = findCorners(img)      # 2 Corner detection
+	q = makeQuad(corners)           #    (convert to quad)
+	p = getProfiles(img, q, sf)     # 3 Get Profiles
+	for i in range(4):	q.sideLen[i] *= scalefactorCam #apply scale factor to side lengths
+	print('Peice Type:', determinetype(p[1]))
+	return jigsaw.jigsaw(q.sideLen, p[1], q.crnrAng, p[0], None, 'cam')	
 	
 def export(xjig):
 	print(xjig.q.sideLen)
@@ -599,23 +618,24 @@ def export(xjig):
 	
 def example(i):
 	print ('Analysing', i)
-	x = process(i)
+	x = process_boxart(i)
 	export(x)
 
-fname = '13_22'
+if __name__ == '__main__':
+	fname = '13_22'
 
-if '-debug' in sys.argv:
-	debug = True
-if '-debugall' in sys.argv:
-	debug = True
-	debugPreProcessing = True
-	debugGeometry = True
-if '-debugpre' in sys.argv:
-	debugPreProcessing = True
-if '-debuggeo' in sys.argv:
-	debugGeometry = True
+	if '-debug' in sys.argv:
+		debug = True
+	if '-debugall' in sys.argv:
+		debug = True
+		debugPreProcessing = True
+		debugGeometry = True
+	if '-debugpre' in sys.argv:
+		debugPreProcessing = True
+	if '-debuggeo' in sys.argv:
+		debugGeometry = True
 
-if len(sys.argv) >= 2: 
-	fname = sys.argv[1]
-if '.png' in fname: fname = fname[:-4]
-example(fname.replace('\\','/'))
+	if len(sys.argv) >= 2: 
+		fname = sys.argv[1]
+	if '.png' in fname: fname = fname[:-4]
+	example(fname.replace('\\','/'))
