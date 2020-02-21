@@ -100,6 +100,18 @@ def findCenter(a):
 	ysum = zy.sum()
 	return ( xsum / tot, ysum / tot )
 	
+def refinecm(img, cm):
+	_y = int(cm[1])
+	_x = int(cm[0])
+
+	# cross pattern search to find a black pixel:
+	for i in range(55):
+		if (img[_y+i][_x  ] == 0): return (_x  ,_y+i)
+		if (img[_y-i][_x  ] == 0): return (_x  ,_y-i)
+		if (img[_y  ][_x+i] == 0): return (_x+i,_y  )
+		if (img[_y  ][_x-i] == 0): return (_x-i,_y  )
+	
+
 def inbound(img, crd):
 	sy, sx = img.shape
 	#print (crd,(sx,sy))
@@ -530,17 +542,65 @@ def getProfiles(img, q, sf):
 		types.append(theType)
 	return (p, types)
 
-def Preprocessing_cam(InputImg):
-	hsv = cv2.cvtColor(InputImg, cv2.COLOR_BGR2HSV)
+def clearbg(rgb):
+	hsv = cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
 	h,s,v = cv2.split(hsv)
-
-	# do nothing with h and v
+	b,g,r = cv2.split(rgb)
 	
-	# 50% on S: BLACK pixel
-	m2 = cv2.inRange(s, 128, 255) # Sat is HIGH
+	zeros = np.zeros(v.shape, np.uint8)
+	image = zeros[:]
 	
 
-	return m2
+	mask_grey  = cv2.inRange(g, 0, 80)
+	mask_black = cv2.inRange(s, 0, 128)
+	mask_white = cv2.inRange(s, 160, 255)
+	
+	# Rendering order:
+	# Gray background
+	# White
+	# Black
+	# Grey
+	image[:] = 128
+	cv2.bitwise_or(image, 255, dst=image, mask=(mask_white))
+	cv2.bitwise_and(image, 0, dst=image, mask=(mask_black))
+	cv2.bitwise_and(image, 0, dst=image, mask=(mask_grey))
+	cv2.bitwise_or(image, 128, dst=image, mask=(mask_grey))
+
+	return image
+
+	
+def glareElimination(img):
+	# find center of mass
+	cm = findCenter(img)
+	cm = refinecm(img, cm)
+
+	# Fill the center and the perimeter with gray.
+	mask1 = make_floodfill_mask(img, 0, 0)
+
+	# Fill the perim with gray
+	work  = img[:]
+	work[0,:] = 255
+	work[:,0] = 255
+	work[-1,:] = 255
+	work[:,-1] = 255
+
+	mask2 = make_floodfill_mask(work, int(cm[0]), int(cm[1]))
+	mask3 = cv2.bitwise_or(mask1, mask2)
+	work[mask3==0] = 128
+
+	# clear any islands
+	# Turn all grey islands that don't touch black to white
+	mask = np.copy(work)
+	floodfill(mask, int(cm[0]), int(cm[1]), 128)
+	floodfill(mask, int(cm[0]), int(cm[1]), 255)
+	img[mask != 255] = 255
+
+	return img
+
+def Preprocessing_cam(InputImg):
+	img = clearbg(InputImg)
+	img = glareElimination(img)	
+	return img
 	
 def determinetype(gauge):
 	classes = {
@@ -609,6 +669,7 @@ def process_cam(imgTmp):
 	for i in range(4):	q.sideLen[i] *= scalefactorCam #apply scale factor to side lengths
 	print('Peice Type:', determinetype(p[1]))
 	return jigsaw.jigsaw(q.sideLen, p[1], q.crnrAng, p[0], None, 'cam')	
+
 	
 def export(xjig):
 	print(xjig.q.sideLen)
@@ -619,11 +680,14 @@ def export(xjig):
 	
 def example(i):
 	print ('Analysing', i)
-	x = process_boxart(i)
-	export(x)
+	#x = process_boxart(i)
+	filename = r'C:\jigsaw\data\2000'+'\\'+i+".png"
+	rgb = cv2.imread(filename)	
+	x = process_cam(rgb)
+	#export(x)
 
 if __name__ == '__main__':
-	fname = '13_22'
+	fname = 'b_0'
 
 	if '-debug' in sys.argv:
 		debug = True
