@@ -156,7 +156,7 @@ def wait4histogram(xvid, video, seconds, name=''):
 
 def main():
 	d = database()
-	video = cv2.VideoCapture(0)
+	video = cv2.VideoCapture(1)
 
 	# calibrate:
 	xvid = calibrator()

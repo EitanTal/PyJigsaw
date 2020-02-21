@@ -684,7 +684,8 @@ def example(i):
 	filename = r'C:\jigsaw\data\2000'+'\\'+i+".png"
 	rgb = cv2.imread(filename)	
 	x = process_cam(rgb)
-	#export(x)
+	x.show(True)
+	x.save()
 
 if __name__ == '__main__':
 	fname = 'b_0'

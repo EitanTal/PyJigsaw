@@ -56,7 +56,7 @@ class jigsaw:
 		profile = loaded['p']
 		return jigsaw(sidelen, sidetype, ang, profile, allowedOreintation, id)
 
-	def show(self, showimage):
+	def show(self, showimage=True):
 		print('Lengths:', self.sidelen)
 		print('Types:  ', self.sidetype)
 		print('Angles: ', self.ang)
