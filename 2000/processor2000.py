@@ -574,19 +574,19 @@ def glareElimination(img):
 	cm = findCenter(img)
 	cm = refinecm(img, cm)
 
-	# Fill the center and the perimeter with gray.
-	mask1 = make_floodfill_mask(img, 0, 0)
-
 	# Fill the perim with gray
-	work  = img[:]
+	work  = np.copy(img)
 	work[0,:] = 255
 	work[:,0] = 255
 	work[-1,:] = 255
 	work[:,-1] = 255
 
+	# Fill the center and the perimeter with gray.
+	mask1 = make_floodfill_mask(work, 0, 0)
+
 	mask2 = make_floodfill_mask(work, int(cm[0]), int(cm[1]))
 	mask3 = cv2.bitwise_or(mask1, mask2)
-	work[mask3==0] = 128
+	img[mask3==0] = 128
 
 	# clear any islands
 	# Turn all grey islands that don't touch black to white
@@ -682,13 +682,14 @@ def example(i):
 	print ('Analysing', i)
 	#x = process_boxart(i)
 	filename = r'C:\jigsaw\data\2000'+'\\'+i+".png"
-	rgb = cv2.imread(filename)	
-	x = process_cam(rgb)
+	rgb = cv2.imread(filename)
+	bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+	x = process_cam(bgr)
 	x.show(True)
 	x.save()
 
 if __name__ == '__main__':
-	fname = 'b_0'
+	fname = 'png/lightgreen/j_1'
 
 	if '-debug' in sys.argv:
 		debug = True
