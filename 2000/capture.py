@@ -28,11 +28,11 @@ class calibrator():
 			hok = hisogramok(hsv)
 			if hok:
 				cal_time_start = time.time()
-				cv2.putText(img, 'Remove peice.', (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
+				cv2.putText(img, 'Remove peice', (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
 				cv2.imshow('Webcam view', img)
 				cv2.waitKey(1)
 			elif (d < seconds): # allow 3 seconds for alignment following histogram match confirmation
-				cv2.putText(img, 'Calibrating.'+str(seconds-int(d)), (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
+				cv2.putText(img, 'Calibrating '+str(seconds-int(d)), (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
 				cv2.imshow('Webcam view', img)
 				cv2.waitKey(1)
 			else:
@@ -84,7 +84,7 @@ class database():
 		
 	@staticmethod
 	def getfilename(page,x,y):
-		name =  database.foldernames[page] + '/' + database.alum(x) + '_' + str(y) 
+		name =  database.foldernames[page] + '/' + database.alum(x) + '_' + str(y+1) 
 		return name
 	
 	@staticmethod	
@@ -96,14 +96,14 @@ class database():
 	@staticmethod	
 	def id2shortname(id):
 		page,x,y = database.id2crd(id)
-		return database.alum(x) + '_' + str(y)
+		return database.alum(x) + '_' + str(1+y)
 
 	@staticmethod
 	def id2crd(id):
 		per_page = database.sx*database.sy
 		page = id // per_page
 		y = (id % per_page) // database.sx
-		x = (id % database.sy)
+		x = (id % database.sx)
 		return (page,x,y)
 		
 	def __init__(self):
@@ -135,12 +135,16 @@ def wait4histogram(xvid, video, seconds, name=''):
 			d = time.time() - nohist
 			if not (hok):
 				nohist = time.time()
-				text = 'No peice detected'
+				text = 'Not detected'
 			else:
 				text = 'Capture in '+str(seconds-int(d))
 			if (d >= seconds):
+				cv2.putText(img, 'Analysing', (10,250), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
+				cv2.putText(img, name, (10,450), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
+				cv2.imshow('Webcam view', img)
+				cv2.waitKey(1)
 				return
-			cv2.putText(img, text, (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
+			cv2.putText(img, text, (10,250), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
 			cv2.imshow('Webcam view', img)
 			cv2.waitKey(1)
 	else:
@@ -150,13 +154,14 @@ def wait4histogram(xvid, video, seconds, name=''):
 			text = ''
 			hok = hisogramok(hsv)
 			if not (hok): return
-			cv2.putText(img, 'Captured.'+name, (10,450), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
+			cv2.putText(img, 'Captured', (10,250), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
+			cv2.putText(img, name, (10,450), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
 			cv2.imshow('Webcam view', img)
 			cv2.waitKey(1)
 
 def main():
 	d = database()
-	video = cv2.VideoCapture(1)
+	video = cv2.VideoCapture(0)
 
 	# calibrate:
 	xvid = calibrator()
@@ -170,7 +175,7 @@ def main():
 		img = xvid.capture(video)
 		p = processor2000.process_cam(img)
 		p.id = database.id2filename(id)
-		p.show(True)
+		#p.show(True)
 		p.save()
 		cv2.imwrite(pngfile, img)
 		wait4histogram(xvid,video,-1, shortname)
