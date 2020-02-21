@@ -574,6 +574,10 @@ def glareElimination(img):
 	cm = findCenter(img)
 	cm = refinecm(img, cm)
 
+	# Step 1: Clean up any white islands inside grey zone
+	# Step 2: Clean up any grey islands inside white zone
+
+	# --Step 1--
 	# Fill the perim with gray
 	work  = np.copy(img)
 	work[0,:] = 255
@@ -583,14 +587,14 @@ def glareElimination(img):
 
 	# Fill the center and the perimeter with gray.
 	mask1 = make_floodfill_mask(work, 0, 0)
-
 	mask2 = make_floodfill_mask(work, int(cm[0]), int(cm[1]))
 	mask3 = cv2.bitwise_or(mask1, mask2)
 	img[mask3==0] = 128
 
+	# --Step 2--
 	# clear any islands
 	# Turn all grey islands that don't touch black to white
-	mask = np.copy(work)
+	mask = np.copy(img)
 	floodfill(mask, int(cm[0]), int(cm[1]), 128)
 	floodfill(mask, int(cm[0]), int(cm[1]), 255)
 	img[mask != 255] = 255
