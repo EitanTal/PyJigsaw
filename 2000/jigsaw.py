@@ -80,9 +80,42 @@ class jigsaw:
 		self.north   = 0
 		self.allowedOreintation = allowedOreintation
 
+	def determinetype(self):
+		gauge = self.sidetype
+		classes = {
+			'00++':'-', '00-+':'-','00+-':'-','00--':'-', # corners
+			'0---':'0', '0+++':'3','0--+':']','0+--':'[','0-++':']','0++-':'[','0-+-':'v','0+-+':'w', # edges
+			'+-+-':'A', # classic puzzle peice
+			'++--':'B', # B-type puzzle peice
+			'++++':'+', # plus-type
+			'----':'X', # X-type
+			'+++-':'T', # T-type
+			'+---':'K', # K-type
+		}
+		text = ''
+		for g in gauge:
+			if (g == 0): text += '0'
+			if (g <  0): text += '-'
+			if (g >  0): text += '+'
+		
+		t = text*2
+		for k in classes.keys():
+			if k in t:
+				return classes[k]
+		return '?'
+
 if __name__ == '__main__':
-	fname = 'a1a'
+	fname = '-box'
 	if len(sys.argv) >= 2: fname = sys.argv[1]
-	if '.npz' in fname: fname = fname[:-4]
-	j = jigsaw.load(fname)
-	j.show('-text' not in sys.argv)
+	if (fname == '-box'):
+		workdir = r'C:\jigsaw\data\2000\npz_boxart'
+		for y in range(40):
+			for x in range(50):
+				fname = str(x+1) + '_' + str(y+1)
+				j = jigsaw.load(fname)
+				print(j.determinetype(),end='')
+			print()
+	else:
+		if '.npz' in fname: fname = fname[:-4]
+		j = jigsaw.load(fname)
+		j.show('-text' not in sys.argv)
