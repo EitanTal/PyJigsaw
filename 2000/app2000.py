@@ -474,7 +474,7 @@ def solve():
 					if z is not None:
 						x,y = z
 						break
-				if (x > 0):
+				if (x >= 0):
 					print ('Moved cursor to',  x,y)
 					b.update(pos[0],pos[1],('?',0))
 					pos = x,y
