@@ -154,3 +154,10 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	if (StepsDebug or show):
 		imshow(r)
 	return score
+
+# a is the knob, b is the dip.
+def fitProfiles(a, b, ga, gb, _debug=False):
+	if (ga > 0):
+		return fitProfilesEx(a, b, ga, gb, _debug)
+	else:
+		return fitProfilesEx(b, a, gb, ga, _debug)

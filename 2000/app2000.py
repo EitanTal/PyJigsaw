@@ -1,7 +1,7 @@
 import os
 import sys
 import jigsaw
-import fitter2000
+import fitter2000 as fitter
 import math
 from puzzlemap import ThePuzzleMap
 from parse import parse
