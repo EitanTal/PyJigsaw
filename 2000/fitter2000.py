@@ -12,34 +12,6 @@ def imshow(a):
 	plt.imshow(a, cmap = plt.get_cmap('gray'))
 	plt.show()
 
-def determineMinGauge(img):
-	sy, sx = img.shape
-	mindepth = sy
-	for tx in range(sx):
-		for ty in range(sy):			
-			if (img[ty][tx] != 0): mindepth = min(mindepth, ty)
-	return mindepth
-
-def determineMinGauge1(img):
-	sy, sx = img.shape
-	mindepth = sy
-	for tx in range(sx):
-		for ty in range(sy):			
-			if (img[ty][tx] != 255): mindepth = min(mindepth, ty)
-	return mindepth
-
-def QuickYNudge_slow(a, b):
-	syA, sxA = a.shape
-	hA = syA - determineMinGauge(a)
-	hB = determineMinGauge1(b)
-	yNudge = syA - (hA + hB + 1)
-	if (Debug):
-		print ('Height of knob:', hA, '@ y=', syA - hA)
-		print ('Height of Dip:', hB, '@ y=', hB)
-		print ('Height of A:', syA)
-		print ('yNudge:', yNudge)
-	return yNudge
-
 def QuickYNudge(a, gA, gB):
 	syA, sxA = a.shape
 	hA = gA
@@ -51,13 +23,6 @@ def QuickYNudge(a, gA, gB):
 		print ('Height of A:', syA)
 		print ('yNudge:', yNudge)
 	return int(yNudge)
-
-# a is the knob, b is the dip.
-def fitProfiles(a, b, ga, gb, _debug=False):
-	if (ga > 0):
-		return fitProfilesEx(a, b, ga, gb, _debug)
-	else:
-		return fitProfilesEx(b, a, gb, ga, _debug)
 
 def fitProfilesEx(a, b, ga, gb, _debug=False):
 	# B side adjustment:
@@ -189,25 +154,3 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	if (StepsDebug or show):
 		imshow(r)
 	return score
-
-if __name__ == '__main__':
-	Debug = True
-	profile1 = 'a1b'
-	profile1_orientation = 1
-	profile2 = 'a1a'
-	profile2_orientation = 1
-	
-	if len(sys.argv) >= 5:
-		profile1 = sys.argv[1]
-		profile1_orientation = int(sys.argv[2])
-		profile2 = sys.argv[3]
-		profile2_orientation = int(sys.argv[4])
-	
-	j1 = jigsaw.jigsaw.load(profile1)
-	j1.orient(profile1_orientation)
-	
-	j2 = jigsaw.jigsaw.load(profile2)
-	j2.orient(profile2_orientation)
-	
-	fitProfiles(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
-	
