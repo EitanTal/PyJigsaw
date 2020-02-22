@@ -11,8 +11,6 @@ sy = 40
 
 datadir = r'C:\jigsaw\data\2000\npz'
 
-folderlist = []
-
 Debug = False
 Mirror = False
 ConsiderOrientation = False
@@ -52,7 +50,7 @@ class Board:
 		clear()
 		for line in self.board:
 			c = ''
-			reverse = -1 if Mirror else 0
+			reverse = -1 if Mirror else 1
 			for char in line[::reverse]:
 				if (char[0] == '?'):
 					c += ' '
@@ -63,19 +61,19 @@ class Board:
 			print (c)
 			
 	def dump(self):
-		with open('board.txt', 'w') as f:
+		with open('board2.txt', 'w') as f:
 			for line in self.board:
 				for char in line:
 					f.write (str(char)+'\n')
 				
 	def load(self):
-		with open('board.txt', 'r') as f:
+		with open('board2.txt', 'r') as f:
 			for y in range(sy):
 				for x in range(sx):
 					txt = f.readline()
 					p = eval(txt)
 					self.update(x,y,p)
-					
+
 	def at(self,x,y):
 		if (x < 0) or (y < 0) or (x >= sx) or (y >= sy):
 			return None
@@ -102,14 +100,15 @@ def getUnusedInventory():
 	return result
 
 def populateInventory():
-	for f in datadir
-		f.isdir():
+	folderlist = []
+
+	for f in os.listdir(datadir):
+		if (os.path.isdir(datadir+'\\'+f)):
 			folderlist += [f]
 
 	npz = []
-	npz += populateInventoryFolder('box9')
 
-	for f in folderlist.splitlines():
+	for f in folderlist:
 		if f.strip() != '':
 			npz += populateInventoryFolder(f)
 	
