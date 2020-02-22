@@ -466,12 +466,22 @@ def solve():
 		candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, ExhaustiveSrch)
 		r = choose(candidates)
 		if (r.__class__ is str):
-			if r.startswith('p'):
-				x,y = parse('p{:d},{:d}', r)
-				print ('Moved cursor to',  x,y)
-				b.update(pos[0],pos[1],('?',0))
-				pos = x,y
-				cmdline = input("Hit enter to continue").strip()
+			if r.startswith('j'):
+				x = y = -1
+				formats = ['j{:d},{:d}','j{:d} {:d}','j {:d},{:d}','j {:d} {:d}']
+				for f in formats:
+					z = parse(f, r)
+					if z is not None:
+						x,y = z
+						break
+				if (x > 0):
+					print ('Moved cursor to',  x,y)
+					b.update(pos[0],pos[1],('?',0))
+					pos = x,y
+					cmdline = input("Hit enter to continue").strip()
+				else:
+					print('format not recognised')
+					cmdline = input("Hit enter to continue").strip()
 				continue
 			if r == '?':
 				print( 'Cursor at: ', pos )
