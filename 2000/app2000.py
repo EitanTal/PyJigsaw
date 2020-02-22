@@ -213,13 +213,25 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		
 	if (flats == 1):
 		if (jLt):
-			a2 = 180 - jLt.ang[3]
+			if (nUp == None): # clockwise solving
+				a2 = 180 - jLt.ang[3]
+			else: # counter-clockwise solving
+				a1 = 180 - jLt.ang[0]
 		if (jUp):
-			a3 = 180 - jUp.ang[0]
+			if (nRt == None): # clockwise solving
+				a3 = 180 - jUp.ang[0]
+			else:
+				a2 = 180 - jUp.ang[1]
 		if (jRt):
-			a0 = 180 - jRt.ang[1]
+			if (nDn == None): # clockwise solving
+				a0 = 180 - jRt.ang[1]
+			else: # counter-clockwise solving
+				a3 = 180 - jRt.ang[2]
 		if (jDn):
-			a1 = 180 - jDn.ang[2]
+			if (nLt == None): # clockwise solving
+				a1 = 180 - jDn.ang[2]
+			else: # counter-clockwise solving
+				a0 = 180 - jDn.ang[3]
 
 	if (Debug): print ('angs:', a0, a1, a2, a3)
 	

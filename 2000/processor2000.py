@@ -685,15 +685,16 @@ def export(xjig):
 def example(i):
 	print ('Analysing', i)
 	#x = process_boxart(i)
-	filename = r'C:\jigsaw\data\2000'+'\\'+i+".png"
+	filename = r'C:\jigsaw\data\2000'+'\\png\\'+i+".png"
 	rgb = cv2.imread(filename)
 	bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 	x = process_cam(bgr)
+	x.id = i
 	x.show(True)
 	x.save()
 
 if __name__ == '__main__':
-	fname = 'png/lightgreen/j_1'
+	fname = 'other1/h_5'
 
 	if '-debug' in sys.argv:
 		debug = True
