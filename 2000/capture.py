@@ -65,7 +65,7 @@ class calibrator():
 
 
 class database():
-	foldernames = ['Yellow','White','Orange','Brown','Red','Pink','Purple','Blue','LghtGrn','DarkGrn','None']
+	foldernames = ['Yellow','White','Orange','Brown','Red','Pink','Purple','Blue','LghtGrn','DarkGrn','Other1','Other2','Other3']
 	sx = 10
 	sy = 20
 	
@@ -193,6 +193,11 @@ def main():
 		pngfile = database.id2path(id)
 		shortname = database.id2shortname(id)
 		wait4histogram(xvid,video, 3, d, shortname)
+		# page might change...
+		id = d.getNextId() 
+		shortname = database.id2shortname(id)
+		pngfile = database.id2path(id)
+		##########
 		img = xvid.capture(video)
 		p = processor2000.process_cam(img)
 		p.id = database.id2filename(id)
