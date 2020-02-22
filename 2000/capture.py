@@ -65,14 +65,28 @@ class calibrator():
 
 
 class database():
-	foldernames = ['lightgreen','white','yellow','orange']
+	foldernames = ['Yellow','White','Orange','Brown','Red','Pink','Purple','Blue','LghtGrn','DarkGrn','None']
 	sx = 10
-	sy = 15
+	sy = 20
 	
 	def getNextId(self):
 		while (os.path.exists(database.id2path(self.id))):
 			self.id += 1
 		return self.id
+
+	def nextPage(self):
+		page,x,y = database.id2crd(self.id)
+		page = page + 1
+		page = page % len(database.foldernames)
+		x = y = 0
+		self.id = page * self.sx * self.sy
+		self.getNextId()
+		page,x,y = database.id2crd(self.id)
+		print('Skipped to page:', '[',page,']',database.foldernames[page],'\t','\tx:',x,'\ty:',y,'\tid:',self.id,'name:',database.id2shortname(self.id))
+
+	def greet(self):
+		page,x,y = database.id2crd(self.id)
+		print('Current:', '[',page,']',database.foldernames[page],'\t','\tx:',x,'\ty:',y,'\tid:',self.id,'name:',database.id2shortname(self.id))
 
 	@staticmethod
 	def id2path(id):
@@ -124,7 +138,7 @@ def hisogramok(hsv):
 	pct = tot / (h.shape[0]*h.shape[1])
 	return (pct >= 0.25)
 
-def wait4histogram(xvid, video, seconds, name=''):
+def wait4histogram(xvid, video, seconds, db, name=''):
 	nohist = time.time()
 	if (seconds > 0):
 		while(True):
@@ -146,7 +160,14 @@ def wait4histogram(xvid, video, seconds, name=''):
 				return
 			cv2.putText(img, text, (10,250), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
 			cv2.imshow('Webcam view', img)
-			cv2.waitKey(1)
+			key = cv2.waitKey(1)
+			if (key == ord('j')):
+				db.nextPage()
+			if (key == ord('?')):
+				db.greet()
+			if (key == ord('q')):
+				db.greet()
+				exit(1)
 	else:
 		while(True):
 			img = xvid.capture(video)
@@ -171,14 +192,14 @@ def main():
 		id = d.getNextId()
 		pngfile = database.id2path(id)
 		shortname = database.id2shortname(id)
-		wait4histogram(xvid,video, 3, shortname)
+		wait4histogram(xvid,video, 3, d, shortname)
 		img = xvid.capture(video)
 		p = processor2000.process_cam(img)
 		p.id = database.id2filename(id)
 		#p.show(True)
 		p.save()
 		cv2.imwrite(pngfile, img)
-		wait4histogram(xvid,video,-1, shortname)
+		wait4histogram(xvid,video,-1, d, shortname)
 
 	
 
