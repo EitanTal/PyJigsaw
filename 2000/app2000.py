@@ -227,7 +227,8 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 	# Geometry match:
 	matches = []
 	for j in inventory:
-		if j[0] in 'ctds' and j[0] != tq: continue
+		p = orient(j, 0)
+		if p.determinetype() != tq: continue
 		
 		for i in range(4):
 			p = orient(j, i)
