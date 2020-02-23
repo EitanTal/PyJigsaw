@@ -20,14 +20,38 @@ unsolved = Board(sx,sy)
 def niceprint(list, correct_answer):
     if (len(list) == 0): 
         print ('-- No Matches --')
-        input("Hit enter to continue").strip()
+        #input("Hit enter to continue").strip()
+        exit(1)
     for i,elem in enumerate(list):
         if (elem[0][0] == correct_answer[0]):
             print ('*** ', end='')
         else:
             print ('    ', end='')
-        mystr = ('{}: {}\t{:.2f}\t({:.2f}\t{:.2f})'.format( i, elem[0], elem[1], elem[2], elem[3]))
+        if (type(elem[1]) is int and elem[1] == 0):
+            mystr = ('{}: {}\t-----\t({:.2f}\t{:.2f}) meta:{:.2f}'.format( i, elem[0], elem[2], elem[3], elem[-1]))
+        else:
+            mystr = ('{}: {}\t{:.2f}\t({:.2f}\t{:.2f}) {} meta:{:.2f}'.format( i, elem[0], elem[1], elem[2], elem[3], elem[4], elem[-1]))
         print(mystr)
+
+def reorder_candidates(candidates):
+    # sort by angle
+    # remove records > 1100
+    results = []
+    for c in candidates:
+        if True:#c[1] <= 11000:
+            # calculate meta-score:
+            ang = c[3]
+            l = c[2]
+            metascore = ang + l/10
+            c += [metascore]
+            results += [c]
+
+    return results
+
+    # order by meta-score:
+    results_ordered = sorted(results,key=lambda x: x[-1])
+
+    return results_ordered
 
 def solve_simulate():
     pos = moveFwd(None)
@@ -43,12 +67,14 @@ def solve_simulate():
         n3 = unsolved.at(pos[0]+1,pos[1]+1)
 
         targetq = ThePuzzleMap.splitlines()[pos[1] + 1][pos[0]]
-        candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, False)
+        raw_candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, False)
+        candidates = reorder_candidates(raw_candidates)
+        #candidates = raw_candidates
         correct_answer = solved.at(*pos)
         niceprint(candidates, correct_answer)
         unsolved.update(*pos, correct_answer)
         pos = moveFwd(pos)
-
+        print ('Pos is:', pos)
         input("Hit enter to continue").strip()
 
 def main():

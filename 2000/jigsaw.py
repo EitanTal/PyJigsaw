@@ -67,6 +67,9 @@ class jigsaw:
 				plt.imshow(p, cmap = plt.get_cmap('gray'))
 				plt.show()
 
+	def exportpng(self):
+		pass
+
 	@staticmethod
 	def loadAll():
 		pass # return a list
@@ -119,3 +122,4 @@ if __name__ == '__main__':
 		if '.npz' in fname: fname = fname[:-4]
 		j = jigsaw.load(fname)
 		j.show('-text' not in sys.argv)
+		j.exportpng('-png' in sys.argv)

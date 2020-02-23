@@ -24,6 +24,35 @@ def QuickYNudge(a, gA, gB):
 		print ('yNudge:', yNudge)
 	return int(yNudge)
 
+class score:
+	def __ge__(self, other):
+		in1 = self.val()
+		in2 = other.val()
+		return (in1 >= in2)
+
+	def __lt__(self, other):
+		in1 = self.val()
+		in2 = other.val()
+		return (in1 < in2)
+
+	def __init__(self):
+		self.sx = 0
+
+	def __str__(self):
+		if (self.sx == 0): return '----'
+		mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tN:[{} {}]'.format(self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.nudge[0], self.nudge[1])
+		return mystr
+
+	def val(self):
+		if (self.sx == 0): return 0
+		diffscore = 0
+		diffscore += self.blackOnBlack*1
+		#diffscore += self.greyOnBlack*0.03
+		#diffscore += self.greyOnGrey*0.01
+		#diffscore += self.whiteOnWhite/3
+		return int( 100 * diffscore / self.sx )
+
+
 def fitProfilesEx(a, b, ga, gb, _debug=False):
 	# B side adjustment:
 	b180 = np.rot90(b, 2) # rotate profile b by 180 degrees
@@ -73,10 +102,10 @@ def fitProfilesEx(a, b, ga, gb, _debug=False):
 
 	if (Debug or _debug):
 		print( 'Nudge:', nudge)
-		print( 'Fit rating:', int(lastScore*100))
+		print( 'Fit rating:', lastScore.val())
 		fitProfiles_internal(a, b180, nudge, True)
 
-	return int(lastScore*100)
+	return lastScore
 
 def fitProfiles_internal(a, b180, nudge, show=False):
 	# a and b might be of a slightly different size.
@@ -139,21 +168,23 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	# White-on-midrange is allowed
 	# Midrange-on-midrange is allowed.
 	# Bits 012 without 345 is allowed. (nudges, offsets, size differences, etc)
-	
-	score = 0
-	score += np.sum((r &  9) ==  9)
-	score += np.sum((r & 10) == 10)
-	score += np.sum((r & 17) == 17)
-	score += np.sum((r & 36) == 36)
+	result = score()
+
+	result.blackOnBlack = np.sum((r &  9) ==  9)
+	result.greyOnBlack  = np.sum((r & 10) == 10) + np.sum((r & 17) == 17)
+	result.whiteOnWhite = np.sum((r & 36) == 36)
+	result.greyOnGrey   = np.sum((r & 18) == 18)
+	result.nudge = nudge
+	result.sx = sx
 
 	# Score normalize:
-	score = score / sx
 	if (StepsDebug):
 		print( 'Nudge:', nudge)
-		print( 'Fit rating:', int(score*100))
+		print( 'Fit rating:', result.val())
 	if (StepsDebug or show):
 		imshow(r)
-	return score
+
+	return result
 
 # a is the knob, b is the dip.
 def fitProfiles(a, b, ga, gb, _debug=False):
@@ -161,3 +192,47 @@ def fitProfiles(a, b, ga, gb, _debug=False):
 		return fitProfilesEx(a, b, ga, gb, _debug)
 	else:
 		return fitProfilesEx(b, a, gb, ga, _debug)
+
+def fitProfilesBruteForce(a,b,ga,gb):
+	# B side adjustment:
+	b180 = np.rot90(b, 2) # rotate profile b by 180 degrees
+	
+	TopScore = 999999
+	bestNudge = []
+
+	searchradius = 15
+
+	#check
+	for y in range(-searchradius,searchradius+1):
+		for x in range(-searchradius,searchradius+1):
+			nudge = [x,y]
+			score = fitProfiles_internal(a, b180, nudge)
+			if (score < TopScore):
+				TopScore = score
+				bestNudge = nudge
+	
+	print ('TopScore', TopScore*100, 'Nudge:', bestNudge)
+
+
+if __name__ == '__main__':
+	Debug = True
+	profile1 = 'other1/h_5'
+	profile1_orientation = 1
+	profile2 = 'other1/h_6'
+	profile2_orientation = 3
+	
+	if len(sys.argv) >= 5:
+		profile1 = sys.argv[1]
+		profile1_orientation = int(sys.argv[2])
+		profile2 = sys.argv[3]
+		profile2_orientation = int(sys.argv[4])
+	
+	j1 = jigsaw.jigsaw.load(profile1)
+	j1.orient(profile1_orientation)
+	
+	j2 = jigsaw.jigsaw.load(profile2)
+	j2.orient(profile2_orientation)
+	
+	#fitProfiles(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
+	fitProfilesBruteForce(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
+	

@@ -33,8 +33,8 @@ def calcscore(list):
 	return math.sqrt(sum)
 
 class Board:
-	board = [] # access type: board[y][x]
 	def __init__(self, sizeX, sizeY):
+		self.board = []
 		line = [('?',0)] * sizeX
 		for _ in range(sizeY):
 			self.board += [line[:]]
@@ -320,7 +320,11 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		if (p1 is not None): pScore += [fitProfiles(p1, getp(p, 1))]
 		if (p2 is not None): pScore += [fitProfiles(p2, getp(p, 2))]
 		if (p3 is not None): pScore += [fitProfiles(p3, getp(p, 3))]
-		m[1] += calcscore(pScore)
+		result = calcscore(pScore)
+		if type(result) is int:
+			result = fitter.score()
+		m[1] += result.val()
+		m += [result]
 	
 	# Sort again...
 	cutoffScore = 4000
@@ -503,17 +507,22 @@ def solve():
 			input("Hit enter to continue").strip()
 			b.update(pos[0],pos[1],('?',0))
 
-if '-new' not in sys.argv:
-	b.load()
-	
-if '-ext' in sys.argv:
-	ExhaustiveSrch = True
 
-if '-ort' in sys.argv:
-	ConsiderOrientation = False
+def main():
+	if '-new' not in sys.argv:
+		b.load()
+		
+	if '-ext' in sys.argv:
+		ExhaustiveSrch = True
 
-try:
-	solve()
-finally:
-	b.dump()
-	
+	if '-ort' in sys.argv:
+		ConsiderOrientation = False
+
+	try:
+		solve()
+	finally:
+		b.dump()
+		
+
+if __name__ == '__main__':
+	main()
