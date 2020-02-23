@@ -36,7 +36,7 @@ class Board:
 	board = [] # access type: board[y][x]
 	def __init__(self, sizeX, sizeY):
 		line = [('?',0)] * sizeX
-		for i in range(sizeY):
+		for _ in range(sizeY):
 			self.board += [line[:]]
 			
 	def cursor(self,x,y):
@@ -415,7 +415,7 @@ def moveFwd(pos):
 
 	x = pos[0]
 	y = pos[1]
-	hsx = sx // 2
+	#hsx = sx // 2
 	hsy = sy // 2
 
 	# end? can't move forward?
@@ -478,19 +478,18 @@ def solve():
 					print ('Moved cursor to',  x,y)
 					b.update(pos[0],pos[1],('?',0))
 					pos = x,y
-					cmdline = input("Hit enter to continue").strip()
 				else:
 					print('format not recognised')
-					cmdline = input("Hit enter to continue").strip()
+				input("Hit enter to continue").strip()
 				continue
 			if r == '?':
 				print( 'Cursor at: ', pos )
-				cmdline = input("Hit enter to continue").strip()
+				input("Hit enter to continue").strip()
 				continue
 			elif r.startswith('?'):
 				x,y = parse('?{:d},{:d}', r)
 				print ('peice at', x,y, 'is', b.at(x,y))
-				cmdline = input("Hit enter to continue").strip()
+				input("Hit enter to continue").strip()
 				continue
 			else:
 				r = eval(r)
@@ -501,7 +500,7 @@ def solve():
 			b.update(pos[0],pos[1],('?',0))
 			pos = moveBwd(pos)
 			print ('reverted', b.at(pos[0],pos[1]))
-			cmdline = input("Hit enter to continue").strip()
+			input("Hit enter to continue").strip()
 			b.update(pos[0],pos[1],('?',0))
 
 if '-new' not in sys.argv:
