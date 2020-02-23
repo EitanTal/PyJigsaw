@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-
+from cv2 import cv2
 
 workdir = r'C:\jigsaw\data\2000\npz'
 
@@ -68,7 +68,11 @@ class jigsaw:
 				plt.show()
 
 	def exportpng(self):
-		pass
+		for i in range(4):
+			img = self.profile[i]
+			fname = self.id.replace('/','-') + '_' + str(i) + '.png'
+			print( 'saved:', fname)
+			cv2.imwrite(fname, img)
 
 	@staticmethod
 	def loadAll():
@@ -108,7 +112,7 @@ class jigsaw:
 		return '?'
 
 if __name__ == '__main__':
-	fname = '-box'
+	fname = 'Other3/f_1'
 	if len(sys.argv) >= 2: fname = sys.argv[1]
 	if (fname == '-box'):
 		workdir = r'C:\jigsaw\data\2000\npz_boxart'
@@ -122,4 +126,5 @@ if __name__ == '__main__':
 		if '.npz' in fname: fname = fname[:-4]
 		j = jigsaw.load(fname)
 		j.show('-text' not in sys.argv)
-		j.exportpng('-png' in sys.argv)
+		if ('-png' in sys.argv): j.exportpng()
+		
