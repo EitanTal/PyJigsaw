@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+from matplotlib import colors
 import numpy as np
 import math
 import jigsaw
@@ -38,12 +39,19 @@ class score:
 	def __init__(self):
 		self.sx = 0
 
+	@staticmethod
+	def infinite():
+		a = score()
+		a.sx = -1
+		return a
+
 	def __str__(self):
 		if (self.sx == 0): return '----'
 		mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tN:[{} {}]'.format(self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.nudge[0], self.nudge[1])
 		return mystr
 
 	def val(self):
+		if (self.sx < 0): return 999999
 		if (self.sx == 0): return 0
 		diffscore = 0
 		diffscore += self.blackOnBlack*1
@@ -118,9 +126,9 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 
 	# resulting image:
 	r = np.zeros([syA, sxA], dtype=np.uint8)
-	r[a==255]             = 1
+	r[a==0]             = 1
 	r[(a!=255) & (a!=0)]  = 2
-	r[a==0]               = 4
+	r[a==255]               = 4
 
 	# Bit Meaning:
 	# Bit 0 (1) - A pixel (Black)
@@ -156,9 +164,9 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	syB, sxB = b.shape
 	r = r[:syB,:sxB]
 
-	r[b==255]            |= 8
+	r[b==0]            |= 8
 	r[(b!=255) & (b!=0)] |= 16
-	r[b==0]              |= 32
+	r[b==255]              |= 32
 	
 	# scoring:
 	# Bits 0 and 3 will score +1 overlap.                                ( 9)
@@ -182,7 +190,28 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 		print( 'Nudge:', nudge)
 		print( 'Fit rating:', result.val())
 	if (StepsDebug or show):
-		imshow(r)
+		# make a color map of fixed colors
+		A = 'cyan'
+		B = 'yellow'
+		C = 'magenta'
+		D = 'brown'
+		W = 'white'
+		G = 'purple'
+		X = 'black'
+
+		cmap = colors.ListedColormap(
+			[ X,A,B,X,G,X,B,X,D,X,C,X,G,C,X,X,W])
+		bounds=[0, 8.5, 9.5, 10.5, 11.5, 12.5,   16.5, 17.5, 18.5, 19.5, 20.5, 32.5, 33.5, 34.5, 35.5, 36.5]
+		norm = colors.BoundaryNorm(bounds, cmap.N)
+
+		# tell imshow about color map so that only set colors are used
+		img = plt.imshow(r, interpolation='nearest', 
+							cmap=cmap, norm=norm)
+
+		# make a color bar
+		plt.colorbar(img, cmap=cmap, norm=norm, boundaries=bounds, ticks=[9,   10,         12,            17,   18,         20,      33,     34,         36])
+		plt.show()
+		#imshow(r)
 
 	return result
 
@@ -197,7 +226,8 @@ def fitProfilesBruteForce(a,b,ga,gb):
 	# B side adjustment:
 	b180 = np.rot90(b, 2) # rotate profile b by 180 degrees
 	
-	TopScore = 999999
+	TopScore = score.infinite()
+	#TopScore.sx = -1
 	bestNudge = []
 
 	searchradius = 15
@@ -206,20 +236,21 @@ def fitProfilesBruteForce(a,b,ga,gb):
 	for y in range(-searchradius,searchradius+1):
 		for x in range(-searchradius,searchradius+1):
 			nudge = [x,y]
-			score = fitProfiles_internal(a, b180, nudge)
-			if (score < TopScore):
-				TopScore = score
+			_score = fitProfiles_internal(a, b180, nudge)
+			if (_score < TopScore):
+				TopScore = _score
 				bestNudge = nudge
 	
-	print ('TopScore', TopScore*100, 'Nudge:', bestNudge)
+	#print ('TopScore', TopScore.val()*100, 'Nudge:', bestNudge)
+	print (TopScore)
 
 
 if __name__ == '__main__':
 	Debug = True
-	profile1 = 'other1/h_5'
-	profile1_orientation = 1
-	profile2 = 'other1/h_6'
-	profile2_orientation = 3
+	profile1 = 'Other2/e_1'
+	profile1_orientation = 3
+	profile2 = 'Other3/f_1'
+	profile2_orientation = 1
 	
 	if len(sys.argv) >= 5:
 		profile1 = sys.argv[1]
@@ -233,6 +264,6 @@ if __name__ == '__main__':
 	j2 = jigsaw.jigsaw.load(profile2)
 	j2.orient(profile2_orientation)
 	
-	#fitProfiles(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
-	fitProfilesBruteForce(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
+	fitProfiles(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
+	#fitProfilesBruteForce(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
 	
