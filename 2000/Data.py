@@ -35,7 +35,7 @@ def niceprint(list, correct_answer):
 
 def reorder_candidates(candidates):
     # sort by angle
-    # remove records > 1100
+    # remove records > 1100 (nudge >= 15 is discarded via the fitter module)
     results = []
     for c in candidates:
         if True:#c[1] <= 11000:

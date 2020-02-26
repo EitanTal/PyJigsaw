@@ -32,6 +32,15 @@ def calcscore(list):
 		sum += a*a
 	return math.sqrt(sum)
 
+def calc_fit_score(fitscores):
+	if (len(fitscores) == 0): return 0
+	if (len(fitscores) == 1): return fitscores[0]
+	sum = 0
+	for a in fitscores:
+		sum += a*a
+	return math.sqrt(sum)
+
+
 class Board:
 	def __init__(self, sizeX, sizeY):
 		self.board = []
@@ -320,7 +329,7 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		if (p1 is not None): pScore += [fitProfiles(p1, getp(p, 1))]
 		if (p2 is not None): pScore += [fitProfiles(p2, getp(p, 2))]
 		if (p3 is not None): pScore += [fitProfiles(p3, getp(p, 3))]
-		result = calcscore(pScore)
+		result = calc_fit_score(pScore)
 		if type(result) is int:
 			result = fitter.score()
 		m[1] += result.val()
