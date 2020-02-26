@@ -332,7 +332,7 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		result = calc_fit_score(pScore)
 		if type(result) is int:
 			result = fitter.score()
-		m[1] += result.val()
+		m[1] = result.val()
 		m += [result]
 	
 	# Sort again...

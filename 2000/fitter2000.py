@@ -141,7 +141,41 @@ def descent(curScore, curNudge, a, b180, downAllowed=False):
 			return bestNudge, bestVal
 
 
-def fitProfilesEx(a, b, ga, gb, _debug=False):
+def fitProfiles_step1(a, b, ga, gb, _debug=False):
+	global prefetch
+	# run without a rotation:
+	baseScore = fitProfiles_step2(a, b, ga, gb, _debug=False)
+	if (baseScore.sx == -1): return baseScore
+	goodNudge = baseScore.nudge
+	
+	# Test 2 directions:
+	b180_orig = np.rot90(b, 2) # rotate profile b by 180 degrees
+	testdirs = [0.2, -0.2]
+	for direction in testdirs:
+		newDeg = direction
+		b180 = rotate(b180_orig, newDeg)
+		prefetch = {}
+		newVal = fitProfiles_step3(a, b180, goodNudge, _debug)
+		if (newVal < baseScore):
+			break
+	else:
+		return baseScore
+
+	# Keep going in this direction until the result is worse.
+	if (StepsDebug): print ('Run!')	
+	bestVal = newVal
+	for _ in range(2):
+		newDeg += direction
+		b180 = rotate(b180_orig, newDeg)
+		prefetch = {}
+		newVal = fitProfiles_step3(a, b180, goodNudge, _debug)
+		if (newVal < bestVal):
+			bestVal = newVal
+		else:
+			return bestVal
+	return bestVal
+
+def fitProfiles_step2(a, b, ga, gb, _debug=False):
 	global prefetch
 	prefetch = {} # Clear prefetch
 
@@ -151,7 +185,9 @@ def fitProfilesEx(a, b, ga, gb, _debug=False):
 	
 	defaultNudge = [0, yNudge] # X: + is right, - is left. Y: + is down, - is up
 	nudge = np.array(defaultNudge)
+	return fitProfiles_step3(a, b180, nudge, _debug)
 	
+def fitProfiles_step3(a, b180, nudge, _debug=False):
 	baseScore = fitProfiles_internal(a, b180, nudge)
 	while True:
 		result = descent(baseScore, nudge, a, b180, True)
@@ -210,9 +246,9 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 
 	# resulting image:
 	r = np.zeros([syA, sxA], dtype=np.uint8)
-	r[a==0]             = 1
+	r[a==0]               = 1
 	r[(a!=255) & (a!=0)]  = 2
-	r[a==255]               = 4
+	r[a==255]             = 4
 
 	# Bit Meaning:
 	# Bit 0 (1) - A pixel (Black)
@@ -262,12 +298,15 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 	# Bits 012 without 345 is allowed. (nudges, offsets, size differences, etc)
 	result = score()
 
+	# cut off some of the extreme columns to the sides as the rotation can distort the result
+	r = r[:,3:-3]
+
 	result.blackOnBlack = np.sum((r &  9) ==  9)
 	result.greyOnBlack  = np.sum((r & 10) == 10) + np.sum((r & 17) == 17)
 	result.whiteOnWhite = np.sum((r & 36) == 36)
 	result.greyOnGrey   = np.sum((r & 18) == 18)
 	result.nudge        = np.copy(nudge)
-	result.sx = sx
+	result.sx = sx-6
 
 	# Score normalize:
 	if (StepsDebug):
@@ -282,10 +321,10 @@ def fitProfiles_internal(a, b180, nudge, show=False):
 # a is the knob, b is the dip.
 def fitProfiles(a, b, ga, gb, _debug=False):
 	if (ga > 0):
-		TheScore = fitProfilesEx(a, b, ga, gb, _debug)
+		TheScore = fitProfiles_step1(a, b, ga, gb, _debug)
 		#return fitProfilesBruteForce(a, b, ga, gb)
 	else:
-		TheScore = fitProfilesEx(b, a, gb, ga, _debug)
+		TheScore = fitProfiles_step1(b, a, gb, ga, _debug)
 		#return fitProfilesBruteForce(b, a, gb, ga)
 	TheScore.finalize()
 	return TheScore
@@ -320,8 +359,8 @@ def fitProfilesBruteForce(a,b,ga,gb):
 def interactive():
 	global prefetch
 	nudge = [0,0]
-	profile1 = 'Other2/h_5'      # !!!! KNOB !!!!
-	#profile1 = 'Other2/e_1'      # !!!! KNOB !!!! (THIS IS THE WRONG ONE)
+	#profile1 = 'Other2/h_5'      # !!!! KNOB !!!!
+	profile1 = 'Other2/e_1'      # !!!! KNOB !!!! (THIS IS THE WRONG ONE)
 	profile1_orientation = 1
 	profile2 = 'Other3/h_6'      # !!!! DIP  !!!!
 	profile2_orientation = 3
@@ -368,8 +407,8 @@ def interactive():
 
 
 if __name__ == '__main__':
-	interactive()
-	Debug = True
+	#interactive()
+	#Debug = True
 	profile1 = 'Other2/h_5'      # !!!! KNOB !!!!
 	#profile1 = 'Other2/e_1'      # !!!! KNOB !!!! (THIS IS THE WRONG ONE)
 	profile1_orientation = 1
