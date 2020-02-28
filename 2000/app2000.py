@@ -171,7 +171,11 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 	
 	flats = 0 # amount of flat profiles in the surrounding area.
 
-	fit = fitter.Fitter()
+	fit0 = fitter.Fitter()
+	fit1 = fitter.Fitter()
+	fit2 = fitter.Fitter()
+	fit3 = fitter.Fitter()
+
 	if (exhaustive): fit.maxnudge = 30
 	if (Debug): fit.Debug = True
 	
@@ -329,13 +333,13 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		
 		pScore = []
 		if (Debug): print('fitting for', p.id)
-		if (p0 is not None): pScore += [fitProfiles(fit, p0, getp(p, 0))]
-		if (p1 is not None): pScore += [fitProfiles(fit, p1, getp(p, 1))]
-		if (p2 is not None): pScore += [fitProfiles(fit, p2, getp(p, 2))]
-		if (p3 is not None): pScore += [fitProfiles(fit, p3, getp(p, 3))]
+		if (p0 is not None): pScore += [fitProfiles(fit0, p0, getp(p, 0))]
+		if (p1 is not None): pScore += [fitProfiles(fit1, p1, getp(p, 1))]
+		if (p2 is not None): pScore += [fitProfiles(fit2, p2, getp(p, 2))]
+		if (p3 is not None): pScore += [fitProfiles(fit3, p3, getp(p, 3))]
 		result = calc_fit_score(pScore)
 		if type(result) is int:
-			result = fitter.Fitter.score()
+			result = fitter.Fitter.score(0)
 		m[1] = result.val()
 		m += [result]
 	

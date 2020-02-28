@@ -82,7 +82,7 @@ class Fitter():
 			in2 = other.val()
 			return (in1 < in2)
 
-		def __init__(self):
+		def __init__(self, maxNudge):
 			self.sx = 0
 			self.final = False
 			self.blackOnBlack = 0
@@ -90,10 +90,11 @@ class Fitter():
 			self.greyOnGrey = 0
 			self.whiteOnWhite = 0
 			self.nudge = [0,0]
+			self.maxNudge = maxNudge
 
 		@staticmethod
 		def infinite():
-			a = Fitter.score()
+			a = Fitter.score(0)
 			a.sx = -1
 			return a
 
@@ -105,7 +106,7 @@ class Fitter():
 		def val(self):
 			if (self.sx < 0): return 999999
 			if (self.sx == 0): return 0
-			if (self.final and (abs(self.nudge[0]) >= 15 or abs(self.nudge[1]) >= 15)): return 999998
+			if (self.final and (abs(self.nudge[0]) >= self.maxNudge or abs(self.nudge[1]) >= self.maxNudge)): return 999998
 			diffscore = 0
 			diffscore += self.blackOnBlack*10
 			diffscore += self.greyOnBlack*0.3
@@ -116,15 +117,16 @@ class Fitter():
 		def finalize(self):
 			self.final = True
 
-	def __init__(self):
+	def __init__(self, exhaustive=False):
 		self.Debug      = False
 		self.BruteForce = False
 		self.StepsDebug = False
-		self.maxNudge = 15
+		self.maxNudge = 15 if not exhaustive else 30
 		self.prefetch = {}
+		self.bestScore = 200
 
 	def _clearPrefetch(self):
-		self.prefech = {}
+		self.prefetch = {}
 
 	def QuickYNudge(self, a, gA, gB):
 		syA, sxA = a.shape
@@ -157,12 +159,17 @@ class Fitter():
 				TheScore = self.fitProfiles_step1(b, a, gb, ga) # b is the knob, a is the dip.
 
 		TheScore.finalize()
+		self.bestScore = min(TheScore.val(), self.bestScore)
 		return TheScore
 
 	def fitProfiles_step1(self, a, b, ga, gb):
 		# run without a rotation:
 		baseScore = self.fitProfiles_step2(a, b, ga, gb)
-		if (baseScore.sx == -1) or (baseScore.val() > 100): return baseScore
+		if (baseScore.sx == -1): return baseScore
+		if (baseScore.val() > self.bestScore * 2): 
+			if (self.Debug): print ('fit cut short.')
+			return baseScore  # applying degree search reduces score by up to 66%. If the score is double, there's no chance.
+
 		goodNudge = baseScore.nudge
 		origscore = baseScore.val()
 
@@ -177,24 +184,28 @@ class Fitter():
 			if (newVal < baseScore):
 				break
 		else:
+			if (self.Debug): print ( 100,'%' ,'Before: ', origscore)
 			return baseScore
 
-		# Keep going in this direction until the result is worse.
-		if (self.StepsDebug): print ('Run!')	
+		# Keep going in this direction until the result is worse.  (3 ticks total, up to +/- 0.6 degs)
+		if (self.StepsDebug): print ('Run!')
+		bestDeg = newDeg
 		bestVal = newVal
-		for _ in range(2):
+		for _ in range(4):
 			newDeg += direction
 			b180 = rotate(b180_orig, newDeg)
 			self._clearPrefetch()
 			newVal = self.fitProfiles_step3(a, b180, goodNudge)
 			if (newVal < bestVal):
 				bestVal = newVal
+				bestDeg = newDeg
 			else:
-				return bestVal
-		
-		finalscore = bestVal.val()
-		pct = int(finalscore * 100 / origscore)
-		print ( pct,'%' ,'Before: ', origscore, 'After:', finalscore)
+				break
+
+		if (self.Debug):
+			finalscore = bestVal.val()
+			pct = int(finalscore * 100 / origscore)
+			print ( pct,'%' ,'Before: ', origscore, 'After:', finalscore, 'deg:', bestDeg)
 		return bestVal
 
 	def fitProfiles_step2(self, a, b, ga, gb):
@@ -322,7 +333,7 @@ class Fitter():
 		# White-on-midrange is allowed
 		# Midrange-on-midrange is allowed.
 		# Bits 012 without 345 is allowed. (nudges, offsets, size differences, etc)
-		result = Fitter.score()
+		result = Fitter.score(self.maxNudge)
 
 		# cut off some of the extreme columns to the sides as the rotation can distort the result
 		r = r[:,3:-3]
