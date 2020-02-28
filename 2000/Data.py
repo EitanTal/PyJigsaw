@@ -75,7 +75,7 @@ def solve_simulate():
         unsolved.update(*pos, correct_answer)
         pos = moveFwd(pos)
         print ('Pos is:', pos)
-        input("Hit enter to continue").strip()
+        #input("Hit enter to continue").strip()
 
 def main():
     solved.load()

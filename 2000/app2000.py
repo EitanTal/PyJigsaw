@@ -146,12 +146,12 @@ def getj(oriented):
 def getp(j, side):
 	return (j.profile[side], j.sidetype[side])
 	
-def fitProfiles(a, b):
+def fitProfiles(f, a, b):
 	if (Debug): print (a[1], b[1])
 	if (a[1] == 0 or b[1] == 0):
 		score = 6000 # Attempted to match a flat.
 	elif (a[1] * b[1] < 0):
-		score = fitter.fitProfiles(a[0], b[0], a[1], b[1], Debug)
+		score = f.fit(a[0], b[0], a[1], b[1])
 		if (Debug): print( 'fitter rating = ', score, 'for', a[1], b[1] )
 	else:
 		score = 5000 # Wrong combination.
@@ -170,6 +170,10 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 	a0 = a1 = a2 = a3 = None # 4 angles a candidate should match with.
 	
 	flats = 0 # amount of flat profiles in the surrounding area.
+
+	fit = fitter.Fitter()
+	if (exhaustive): fit.maxnudge = 30
+	if (Debug): fit.Debug = True
 	
 	# profiles (or flat profiles), lengths
 	if ( nUp == None ):
@@ -325,13 +329,13 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		
 		pScore = []
 		if (Debug): print('fitting for', p.id)
-		if (p0 is not None): pScore += [fitProfiles(p0, getp(p, 0))]
-		if (p1 is not None): pScore += [fitProfiles(p1, getp(p, 1))]
-		if (p2 is not None): pScore += [fitProfiles(p2, getp(p, 2))]
-		if (p3 is not None): pScore += [fitProfiles(p3, getp(p, 3))]
+		if (p0 is not None): pScore += [fitProfiles(fit, p0, getp(p, 0))]
+		if (p1 is not None): pScore += [fitProfiles(fit, p1, getp(p, 1))]
+		if (p2 is not None): pScore += [fitProfiles(fit, p2, getp(p, 2))]
+		if (p3 is not None): pScore += [fitProfiles(fit, p3, getp(p, 3))]
 		result = calc_fit_score(pScore)
 		if type(result) is int:
-			result = fitter.score()
+			result = fitter.Fitter.score()
 		m[1] = result.val()
 		m += [result]
 	
@@ -385,6 +389,7 @@ def getFwdDir(pos):
 	onEdge = (x == 0) or (y == 0) or (x+1 == sx) or (y+1 == sy)
 	
 	if (SolvingType == 'Special'):
+		SpecialSolve = '' # // ! Not implemented
 		SpecialSolveX = SpecialSolve.splitlines()[1:]
 		c = SpecialSolveX[y][x]
 		d = None
@@ -523,9 +528,6 @@ def main():
 		
 	if '-ext' in sys.argv:
 		ExhaustiveSrch = True
-
-	if '-ort' in sys.argv:
-		ConsiderOrientation = False
 
 	try:
 		solve()
