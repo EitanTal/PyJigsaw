@@ -102,8 +102,12 @@ class Fitter():
 
 		def __str__(self):
 			if (self.sx == 0): return '----'
-			mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\tV:{}\tD:[{} {}]\t'.format(
-				self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1], int(self.val()), self.defaultNudge[0], self.defaultNudge[1])
+			if (0):
+				mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\tV:{}\tD:[{} {}]\t'.format(
+					self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1], int(self.val()), self.defaultNudge[0], self.defaultNudge[1])
+			else:
+				mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\t'.format(
+					self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1])
 			return mystr
 
 		def val(self):

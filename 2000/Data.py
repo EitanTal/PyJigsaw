@@ -38,15 +38,11 @@ def reorder_candidates(candidates):
     # remove records > 1100 (nudge >= 15 is discarded via the fitter module)
     results = []
     for c in candidates:
-        if True:#c[1] <= 11000:
-            # calculate meta-score:
-            ang = c[3]
-            l = c[2]
-            metascore = ang + l/10
-            c += [metascore]
-            results += [c]
-
-    return results
+        ang = c[3]
+        fit = c[1]
+        metascore = ang*10 + fit
+        c += [metascore]
+        results += [c]
 
     # order by meta-score:
     results_ordered = sorted(results,key=lambda x: x[-1])
