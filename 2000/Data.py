@@ -33,24 +33,9 @@ def niceprint(list, correct_answer):
             mystr = ('{}: {}\t{:.2f}\t({:.2f}\t{:.2f}) {} meta:{:.2f}'.format( i, elem[0], elem[1], elem[2], elem[3], elem[4], elem[-1]))
         print(mystr)
 
-def reorder_candidates(candidates):
-    # sort by angle
-    # remove records > 1100 (nudge >= 15 is discarded via the fitter module)
-    results = []
-    for c in candidates:
-        ang = c[3]
-        fit = c[1]
-        metascore = ang*10 + fit
-        c += [metascore]
-        results += [c]
-
-    # order by meta-score:
-    results_ordered = sorted(results,key=lambda x: x[-1])
-
-    return results_ordered
-
 def solve_simulate():
     pos = moveFwd(None)
+    
     while (pos):
         # find 8-adjacent neighbors: Out of bounds are None, unsolved are ('?', 0)
         nUp = unsolved.at(pos[0],pos[1]-1)
@@ -63,12 +48,10 @@ def solve_simulate():
         n3 = unsolved.at(pos[0]+1,pos[1]+1)
 
         targetq = ThePuzzleMap.splitlines()[pos[1] + 1][pos[0]]
-        raw_candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, False)
-        if (len(raw_candidates) == 0):
+        candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, False)
+        if (len(candidates) == 0):
             print('No candidates. Trying exhaustive search...')
-            raw_candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, True)
-        candidates = reorder_candidates(raw_candidates)
-        #candidates = raw_candidates
+            candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, True)
         correct_answer = solved.at(*pos)
         niceprint(candidates, correct_answer)
         unsolved.update(*pos, correct_answer)

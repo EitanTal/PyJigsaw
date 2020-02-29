@@ -150,12 +150,12 @@ def getp(j, side):
 def fitProfiles(f, a, b):
 	if (Debug): print (a[1], b[1])
 	if (a[1] == 0 or b[1] == 0):
-		score = 6000 # Attempted to match a flat.
+		score = fitter.Fitter.score.infinite() #6000 # Attempted to match a flat.
 	elif (a[1] * b[1] < 0):
 		score = f.fit(a[0], b[0], a[1], b[1], a[2], b[2])
 		if (Debug): print( 'fitter rating = ', score, 'for', a[1], b[1] )
 	else:
-		score = 5000 # Wrong combination.
+		score = fitter.Fitter.score.infinite() #5000 # Wrong combination.
 	return score
 
 def orient(peice, orientation):
@@ -341,7 +341,7 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		m[1] = result.val()
 		m += [result]
 	
-	# Sort again...
+	# Sort again & cutoff:
 	cutoffScore = 4000
 	matches = sorted(matches,key=lambda x: x[1])
 	result = []
@@ -349,7 +349,18 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 		if (m[1] <= cutoffScore):
 			result.append(m)
 
-	return result
+	# Calculate metascore:
+	results_final = []
+	for c in result:
+		ang = c[3]
+		fit = c[1]
+		metascore = ang*10 + fit
+		c += [metascore]
+		results_final += [c]
+
+	# order by meta-score:
+	results_ordered = sorted(results_final,key=lambda x: x[-1])
+	return results_ordered
 
 def niceprint(list, verbose = False):
 	if (len(list) == 0): print ('-- No Matches --')
@@ -462,6 +473,7 @@ def moveBwd(pos):
 	return prev_pos_1
 
 def solve():
+	global ExhaustiveSrch
 	pos = moveFwd(None)
 	while (pos):
 		print ('!', pos)
@@ -525,6 +537,7 @@ def solve():
 
 
 def main():
+	global ExhaustiveSrch
 	if '-new' not in sys.argv:
 		b.load()
 		
