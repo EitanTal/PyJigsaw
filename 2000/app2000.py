@@ -144,14 +144,14 @@ def getj(oriented):
 	return j
 	
 def getp(j, side):
-	return (j.profile[side], j.sidetype[side])
+	return (j.profile[side], j.sidetype[side], j.gauge_x[side])
 	
 def fitProfiles(f, a, b):
 	if (Debug): print (a[1], b[1])
 	if (a[1] == 0 or b[1] == 0):
 		score = 6000 # Attempted to match a flat.
 	elif (a[1] * b[1] < 0):
-		score = f.fit(a[0], b[0], a[1], b[1])
+		score = f.fit(a[0], b[0], a[1], b[1], a[2], b[2])
 		if (Debug): print( 'fitter rating = ', score, 'for', a[1], b[1] )
 	else:
 		score = 5000 # Wrong combination.
@@ -178,6 +178,7 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 	for fit in (fit0,fit1,fit2,fit3):
 		if (exhaustive): fit.maxNudge = 30
 		if (Debug): fit.Debug = True
+		#fit.Debug = True
 	
 	# profiles (or flat profiles), lengths
 	if ( nUp == None ):

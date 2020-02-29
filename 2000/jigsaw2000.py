@@ -28,6 +28,7 @@ class jigsaw:
 		orientation = (4 + -self.north + orientation) % 4
 		self.sidelen = rotate(self.sidelen, orientation)
 		self.sidetype = rotate(self.sidetype, orientation)
+		self.gauge_x = rotate(self.gauge_x, orientation)
 		self.profile = rotate_p(self.profile, orientation)
 		self.ang = rotate(self.ang, orientation)
 		self.north = (self.north + orientation) % 4

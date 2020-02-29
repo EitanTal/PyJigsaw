@@ -91,6 +91,7 @@ class Fitter():
 			self.whiteOnWhite = 0
 			self.nudge = [0,0]
 			self.degs = 0
+			self.defaultNudge = [0,0]
 			self.maxNudge = maxNudge
 
 		@staticmethod
@@ -101,7 +102,8 @@ class Fitter():
 
 		def __str__(self):
 			if (self.sx == 0): return '----'
-			mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\tV:{}\t'.format(self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1], int(self.val()))
+			mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\tV:{}\tD:[{} {}]\t'.format(
+				self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1], int(self.val()), self.defaultNudge[0], self.defaultNudge[1])
 			return mystr
 
 		def val(self):
@@ -148,7 +150,7 @@ class Fitter():
 		# the fidgeting algorithm will find the exact best spot.
 		return int(yNudge - 6)
 
-	def fit(self, a, b, ga, gb):
+	def fit(self, a, b, ga, gb, ga_x=0, gb_x=0):
 		if (self.BruteForce):
 			if (ga > 0):
 				return self.fitProfilesBruteForce(a, b, ga, gb)
@@ -156,17 +158,17 @@ class Fitter():
 				return self.fitProfilesBruteForce(b, a, gb, ga)
 		else:
 			if (ga > 0):
-				TheScore = self.fitProfiles_step1(a, b, ga, gb) # a is the knob, b is the dip.
+				TheScore = self.fitProfiles_step1(a, b, ga, gb, ga_x, gb_x) # a is the knob, b is the dip.
 			else:
-				TheScore = self.fitProfiles_step1(b, a, gb, ga) # b is the knob, a is the dip.
+				TheScore = self.fitProfiles_step1(b, a, gb, ga, gb_x, ga_x) # b is the knob, a is the dip.
 
 		TheScore.finalize()
 		self.bestScore = min(TheScore.val(), self.bestScore)
 		return TheScore
 
-	def fitProfiles_step1(self, a, b, ga, gb):
+	def fitProfiles_step1(self, a, b, ga, gb, ga_x, gb_x):
 		# run without a rotation:
-		baseScore = self.fitProfiles_step2(a, b, ga, gb)
+		baseScore = self.fitProfiles_step2(a, b, ga, gb, ga_x, gb_x)
 		if (baseScore.sx == -1): return baseScore
 		if (baseScore.val() > self.bestScore * 2): 
 			if (self.Debug): print ('fit cut short.')
@@ -209,18 +211,25 @@ class Fitter():
 			pct = int(finalscore * 100 / origscore)
 			print ( pct,'%' ,'Before: ', origscore, 'After:', finalscore, 'deg:', bestDeg)
 		bestVal.degs = bestDeg
+		bestVal.defaultNudge = baseScore.defaultNudge
 		return bestVal
 
-	def fitProfiles_step2(self, a, b, ga, gb):
+	def fitProfiles_step2(self, a, b, ga, gb, ga_x, gb_x):
 		self._clearPrefetch()
 
 		# B side adjustment:
 		b180 = np.rot90(b, 2) # rotate profile b by 180 degrees
 		yNudge = self.QuickYNudge(a, ga, gb)
+		xNudge = int(ga_x - gb_x)
 		
-		defaultNudge = [0, yNudge] # X: + is right, - is left. Y: + is down, - is up
+		defaultNudge = [xNudge, yNudge] # X: + is right, - is left. Y: + is down, - is up
+		self.defaultNudge = defaultNudge
+		if (self.Debug):
+			print ('DefaultNudge:', defaultNudge)
 		nudge = np.array(defaultNudge)
-		return self.fitProfiles_step3(a, b180, nudge)
+		result = self.fitProfiles_step3(a, b180, nudge)
+		result.defaultNudge = defaultNudge
+		return result
 		
 	def fitProfiles_step3(self, a, b180, nudge):
 		baseScore = self.fitProfiles_internal(a, b180, nudge)
@@ -429,7 +438,7 @@ if __name__ == '__main__':
 	
 	f = Fitter()
 
-	f.interactive(profile1, profile1_orientation, profile2, profile2_orientation)
+	#f.interactive(profile1, profile1_orientation, profile2, profile2_orientation)
 
 	if len(sys.argv) >= 5:
 		profile1 = sys.argv[1]
@@ -444,6 +453,6 @@ if __name__ == '__main__':
 	j2.orient(profile2_orientation)
 
 	#f.BruteForce = True
-	score = f.fit(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0])
+	score = f.fit(j1.profile[0], j2.profile[0], j1.sidetype[0], j2.sidetype[0], j1.gauge_x[0], j2.gauge_x[0])
 	print(score, score.val())
 	
