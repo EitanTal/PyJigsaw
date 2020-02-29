@@ -3,7 +3,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import math
 from cv2 import cv2
-import jigsaw
+import jigsaw2000
 import sys
 from itertools import chain
 import os
@@ -145,7 +145,7 @@ def pad(a, num):
 	res = np.concatenate([end,mid,start])
 	return res
 	
-def findMinima(f):
+def findMinima(f, minimumintegal = 33):
 	g = pad(f,15)
 	a = smooth(g)
 	p = int((len(a) - len(f))/2)  # actual pad
@@ -185,7 +185,7 @@ def findMinima(f):
 				break
 		minimaIntegral = (minimaLeft*minimaHeightLeft) + (minimaRight*minimaHeightRight)
 
-		if ( minimaIntegral < 33 ):
+		if ( minimaIntegral < minimumintegal ):
 			print ('Discarded noise')
 			res.remove(m)
 			
@@ -464,9 +464,40 @@ def makeQuad(corners):
 	q.crnrAng  = crnrAng
 	return q
 	
+def findFirst(img, what):
+	sy, sx = img.shape
+	result = np.zeros(sy)
+	if (what == 'gray'):
+		for y in range(sy):
+			for x in range(sx):
+				if img[y][x] != 255:
+					result[y] = x
+					break
+	elif (what == 'black'):
+		for y in range(sy):
+			for x in range(sx):
+				if img[y][x] == 0:
+					result[y] = x
+					break
+
+	return result
+
+def findValley(graph):
+	mins = findMinima(graph)
+	result = 0
+	largest_min = -99999
+	for m in mins:
+		if m < len(graph):
+			if graph[m] > largest_min:
+				largest_min = graph[m]
+				result = m
+	return largest_min
+
 def getProfiles(img, q, sf):
 	p = []
-	types = []
+	gauge = []
+	gauge_x = []
+
 	for i in range(4):
 		sx = int( q.sideLen[i] )
 		sy = sx
@@ -527,22 +558,50 @@ def getProfiles(img, q, sf):
 		########## depth and shape analysis #################
 		mindepth = sy
 		maxdepth = 0
+		maxdepth_x = 0
+		mindepth_x = 0
 		for tx in range(sx):
 			for ty in range(sy):			
-				if (b[ty][tx] != 0): maxdepth = max(maxdepth, ty)
-				if (b[ty][tx] == 0): mindepth = min(mindepth, ty)
+				v = b[ty][tx]
+				if (v != 0): 
+					if (maxdepth < ty):
+						maxdepth = ty
+						maxdepth_x = tx
+				if (v == 0):
+					if (mindepth > ty):
+						mindepth = ty
+						mindepth_x = tx
 		pct_max = 100*maxdepth/sy
 		pct_min = 100*mindepth/sy
 		if ((pct_max - pct_min) < 5):     theType =  0
 		elif ((pct_max + pct_min) > 100): theType = -(sy-maxdepth)
 		else:                             theType =  (sy-mindepth)
 
+		########## Extra analysis ############################
+		if (theType < 0):
+			work = b[mindepth:maxdepth,maxdepth_x:-1]
+			profile = findFirst(work,'gray')
+			spot = findValley(profile)
+			gex = spot + maxdepth_x
+			# and when rotated 180, the valley is at...
+			gex = b.shape[1] - gex
+		elif (theType > 0):
+			work = b[mindepth:maxdepth,0:mindepth_x]
+			work = 255-work
+			work = np.rot90(work, 2)
+			profile = findFirst(work,'black')
+			spot = findValley(profile)
+			gex = work.shape[1] - spot
+		else: 
+			gex = 0
+
 		if debug:
 			imshow(b)
 		
 		p.append(b)
-		types.append(theType)
-	return (p, types)
+		gauge.append(theType)
+		gauge_x.append(gex)
+	return (p, gauge, gauge_x)
 
 def clearbg(rgb):
 	hsv = cv2.cvtColor(rgb, cv2.COLOR_BGR2HSV)
@@ -650,6 +709,7 @@ def process_boxart(imgnr):
 	x.flats = flats
 	x.q = q
 	x.types = p[1]
+	x.gauge_x = p[2]
 	x.p = p[0]
 	x.id = imgnr
 
@@ -674,7 +734,7 @@ def process_cam(imgTmp):
 	p = getProfiles(img, q, sf)     # 3 Get Profiles
 	for i in range(4):	q.sideLen[i] *= scalefactorCam #apply scale factor to side lengths
 	print('Peice Type:', determinetype(p[1]))
-	return jigsaw.jigsaw(q.sideLen, p[1], q.crnrAng, p[0], None, 'cam')	
+	return jigsaw2000.jigsaw(q.sideLen, p[1], q.crnrAng, p[0], p[2], 'cam')	
 
 def check_before_processing(imgTmp):
 	img = Preprocessing_cam(imgTmp) # 1 Preprocessing
@@ -683,14 +743,6 @@ def check_before_processing(imgTmp):
 		if not np.all(b == 255):
 			return False
 	return True
-
-	
-def export(xjig):
-	print(xjig.q.sideLen)
-	print(xjig.types)
-	print(xjig.q.crnrAng)
-	j = jigsaw.jigsaw(xjig.q.sideLen, xjig.types, xjig.q.crnrAng, xjig.p, allowedOreintation, xjig.id)
-	j.save()
 	
 def example(i):
 	print ('Analysing', i)

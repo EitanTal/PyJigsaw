@@ -1,7 +1,7 @@
 import processor2000
 import fitter2000
 from cv2 import cv2
-import jigsaw
+import jigsaw2000
 import os
 import queue
 import threading

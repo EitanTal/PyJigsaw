@@ -1,6 +1,6 @@
 import os
 import sys
-import jigsaw
+import jigsaw2000
 import fitter2000 as fitter
 import math
 from puzzlemap import ThePuzzleMap
@@ -134,7 +134,7 @@ loadedpcs = {}
 	
 def getjigsaw(peice):
 	if peice not in loadedpcs.keys():
-		x = jigsaw.jigsaw.load(peice)
+		x = jigsaw2000.jigsaw.load(peice)
 		loadedpcs[peice] = x
 	return loadedpcs[peice]
 

@@ -3,7 +3,7 @@ import matplotlib.image as mpimg
 from matplotlib import colors
 import numpy as np
 import math
-import jigsaw
+import jigsaw2000
 import sys
 from cv2 import cv2
 

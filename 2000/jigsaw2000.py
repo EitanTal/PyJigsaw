@@ -22,7 +22,6 @@ def rotate_one(l):
 	c = l[2]
 	d = l[3]
 	return [b,c,d,a]
-
 	
 class jigsaw:
 	def orient(self, orientation):
@@ -32,16 +31,11 @@ class jigsaw:
 		self.profile = rotate_p(self.profile, orientation)
 		self.ang = rotate(self.ang, orientation)
 		self.north = (self.north + orientation) % 4
-		
-	def isOrientationAllowed(self, orientation):
-		if self.allowedOreintation is None: return True
-		else: return (self.allowedOreintation[orientation] > 0)
-		
+			
 	def save(self):
 		outfile = workdir + '\\' + str(self.id)
-		orientation = self.allowedOreintation
-		if orientation is None: orientation = [1,1,1,1]
-		meta = np.array(self.sidelen + self.ang + self.sidetype + orientation)
+		gauge_x = self.gauge_x
+		meta = np.array(self.sidelen + self.ang + self.sidetype + gauge_x)
 		profiles = self.profile
 		np.savez_compressed(outfile, m=meta, p=profiles)
 		
@@ -53,15 +47,16 @@ class jigsaw:
 		sidelen = meta[:4].tolist()
 		ang = meta[4:8].tolist()
 		sidetype = meta[8:12].tolist()
-		allowedOreintation = (meta[12:16].tolist() if (len(meta) >= 16 ) else None)
+		gauge_x = (meta[12:16].tolist() if (len(meta) >= 16 ) else None)
 		profile = loaded['p']
-		return jigsaw(sidelen, sidetype, ang, profile, allowedOreintation, id)
+		return jigsaw(sidelen, sidetype, ang, profile, gauge_x, id)
 
 	def show(self, showimage):
 		print('Lengths:', self.sidelen)
 		print('Types:  ', self.sidetype)
 		print('Angles: ', self.ang)
 		print('id:     ', self.id)
+		print('gauge_x ', self.gauge_x)
 		if (showimage):
 			for p in self.profile:
 				plt.imshow(p, cmap = plt.get_cmap('gray'))
@@ -78,14 +73,14 @@ class jigsaw:
 	def loadAll():
 		pass # return a list
 		
-	def __init__(self, sidelen, sidetype, ang, profile, allowedOreintation, id):
+	def __init__(self, sidelen, sidetype, ang, profile, gauge_x, id):
 		self.sidelen = sidelen
 		self.sidetype = sidetype
 		self.profile = profile
 		self.ang     = ang
 		self.id      = id
 		self.north   = 0
-		self.allowedOreintation = allowedOreintation
+		self.gauge_x = gauge_x
 
 	def determinetype(self):
 		gauge = self.sidetype
