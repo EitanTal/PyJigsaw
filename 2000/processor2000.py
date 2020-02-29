@@ -425,8 +425,10 @@ def findCorners(img):
 		for c in corners:
 			crossSz = 5
 			for t in range(-crossSz,crossSz+1):
-				img1[c[1]+t,c[0]] = 255-img1[c[1]+t,c[0]]
-				img1[c[1],c[0]+t] = 255-img1[c[1],c[0]+t]
+				if (inbound(img1, (c[0], c[1]+t) )):
+					img1[c[1]+t,c[0]] = 255-img1[c[1]+t,c[0]]
+				if (inbound(img1, (c[0]+t, c[1]) )):
+					img1[c[1],c[0]+t] = 255-img1[c[1],c[0]+t]
 		imshow(img1)
 
 	return corners
