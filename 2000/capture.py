@@ -153,11 +153,15 @@ def wait4histogram(xvid, video, seconds, db, name=''):
 			else:
 				text = 'Capture in '+str(seconds-int(d))
 			if (d >= seconds):
-				cv2.putText(img, 'Analysing', (10,250), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
-				cv2.putText(img, name, (10,450), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
-				cv2.imshow('Webcam view', img)
-				cv2.waitKey(1)
-				return
+				ok = processor2000.check_before_processing(img)
+				if (ok):
+					cv2.putText(img, 'Analysing', (10,250), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
+					cv2.putText(img, name, (10,450), font, 3, (255, 0, 0), 2, cv2.LINE_AA)
+					cv2.imshow('Webcam view', img)
+					cv2.waitKey(1)
+					return
+				else:
+					nohist = time.time()
 			cv2.putText(img, text, (10,250), font, 3, (0, 255, 0), 2, cv2.LINE_AA)
 			cv2.imshow('Webcam view', img)
 			key = cv2.waitKey(1)

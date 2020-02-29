@@ -676,6 +676,14 @@ def process_cam(imgTmp):
 	print('Peice Type:', determinetype(p[1]))
 	return jigsaw.jigsaw(q.sideLen, p[1], q.crnrAng, p[0], None, 'cam')	
 
+def check_before_processing(imgTmp):
+	img = Preprocessing_cam(imgTmp) # 1 Preprocessing
+	borders = (img[0,:], img[:,0], img[-1,:], img[:,-1])
+	for b in borders:
+		if not np.all(b == 255):
+			return False
+	return True
+
 	
 def export(xjig):
 	print(xjig.q.sideLen)
@@ -690,13 +698,14 @@ def example(i):
 	filename = r'C:\jigsaw\data\2000'+'\\png\\'+i+".png"
 	rgb = cv2.imread(filename)
 	bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+	check_before_processing(bgr)
 	x = process_cam(bgr)
 	x.id = i
 	x.show(True)
 	x.save()
 
 if __name__ == '__main__':
-	fname = 'other1/h_5'
+	fname = 'other1/d_2'
 
 	if '-debug' in sys.argv:
 		debug = True
