@@ -177,7 +177,7 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 	fit2 = fitter.Fitter()
 	fit3 = fitter.Fitter()
 	for fit in (fit0,fit1,fit2,fit3):
-		if (exhaustive): fit.maxNudge = 30
+		if (exhaustive): fit.maxNudge = 50
 		if (Debug): fit.Debug = True
 		#fit.Debug = True
 	
@@ -365,10 +365,8 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 def niceprint(list, verbose = False):
 	if (len(list) == 0): print ('-- No Matches --')
 	for i,elem in enumerate(list):
-		if verbose:
-			print( i,': ', elem[0], '  \t(',elem[1],')', '  \t(',elem[2],elem[3],')' )
-		else:
-			print( i,': ', elem[0], '  \t(',elem[1],')' )
+		mystr = ('{}: {}\t{:.2f}\t({:.2f}\t{:.2f}) {} meta:{:.2f}'.format( i, elem[0], elem[1], elem[2], elem[3], elem[4], elem[-1]))
+		print (mystr)
 	
 def choose(candidates):
 	niceprint(candidates[:4]) # print top 4

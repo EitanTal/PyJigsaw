@@ -119,9 +119,13 @@ class Fitter():
 			if (0):
 				mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\tV:{}\tD:[{} {}]\t'.format(
 					self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1], int(self.val()), self.defaultNudge[0], self.defaultNudge[1])
-			else:
+			elif (0):
 				mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\t'.format(
 					self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1])
+			else:
+				mystr = 'BB{}\tGB{}\tWW{}\tGG{}\t'.format(
+					self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey )
+
 			return mystr
 
 		def val(self):
@@ -132,18 +136,18 @@ class Fitter():
 			diffscore += self.blackOnBlack*10
 			diffscore += self.greyOnBlack*0.3
 			diffscore += self.greyOnGrey*0.1
-			diffscore += self.whiteOnWhite*0.1
+			diffscore += self.whiteOnWhite*0.066
 			return 100 * diffscore / self.sx
 
 		def finalize(self):
 			self.final = True
 
-	def __init__(self, exhaustive=False):
+	def __init__(self):
 		self.Debug      = False
 		self.DebugShow  = False
 		self.BruteForce = False
 		self.StepsDebug = False
-		self.maxNudge = 15 if not exhaustive else 30
+		self.maxNudge = 15
 		self.prefetch = {}
 		self.bestScore = 200
 
