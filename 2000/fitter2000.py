@@ -90,6 +90,7 @@ class Fitter():
 			self.greyOnGrey = 0
 			self.whiteOnWhite = 0
 			self.nudge = [0,0]
+			self.degs = 0
 			self.maxNudge = maxNudge
 
 		@staticmethod
@@ -100,7 +101,7 @@ class Fitter():
 
 		def __str__(self):
 			if (self.sx == 0): return '----'
-			mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tN:[{} {}]'.format(self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.nudge[0], self.nudge[1])
+			mystr = 'BB{}\tGB{}\tWW{}\tGG{}\tD:{:.1f}\tN:[{} {}]\tV:{}\t'.format(self.blackOnBlack, self.greyOnBlack, self.whiteOnWhite, self.greyOnGrey, self.degs, self.nudge[0], self.nudge[1], int(self.val()))
 			return mystr
 
 		def val(self):
@@ -119,6 +120,7 @@ class Fitter():
 
 	def __init__(self, exhaustive=False):
 		self.Debug      = False
+		self.DebugShow  = False
 		self.BruteForce = False
 		self.StepsDebug = False
 		self.maxNudge = 15 if not exhaustive else 30
@@ -206,6 +208,7 @@ class Fitter():
 			finalscore = bestVal.val()
 			pct = int(finalscore * 100 / origscore)
 			print ( pct,'%' ,'Before: ', origscore, 'After:', finalscore, 'deg:', bestDeg)
+		bestVal.degs = bestDeg
 		return bestVal
 
 	def fitProfiles_step2(self, a, b, ga, gb):
@@ -232,7 +235,7 @@ class Fitter():
 		if (self.Debug):
 			print( 'Nudge:', nudge)
 			print( 'Fit rating:', baseScore.val())
-			self.fitProfiles_internal(a, b180, nudge, True)
+			self.fitProfiles_internal(a, b180, nudge, self.DebugShow)
 
 		return baseScore
 

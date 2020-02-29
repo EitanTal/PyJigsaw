@@ -175,9 +175,9 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 	fit1 = fitter.Fitter()
 	fit2 = fitter.Fitter()
 	fit3 = fitter.Fitter()
-
-	if (exhaustive): fit.maxnudge = 30
-	if (Debug): fit.Debug = True
+	for fit in (fit0,fit1,fit2,fit3):
+		if (exhaustive): fit.maxNudge = 30
+		if (Debug): fit.Debug = True
 	
 	# profiles (or flat profiles), lengths
 	if ( nUp == None ):
@@ -289,33 +289,29 @@ def getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, tq, exhaustive=False):
 			
 			legnth_score_avg = calcscore(legnth_score)
 			angular_score_avg = calcscore(angular_score)
-			score = (angular_score_avg + legnth_score_avg)*10
+			geoScore = (angular_score_avg*5 + legnth_score_avg)*10
 			if (Debug): print ('score for id', p.id, 'orentation', i, 'ang score:', angular_score_avg, 'legnth_score', legnth_score_avg)
 			
 			if exhaustive:
 				cutoffLenScore = 250
 				cutoffAngScore = 50
-				cutoffGeoScore = 250
+				cutoffGeoScore = 2500
 			else:
 				cutoffLenScore = 16
 				cutoffAngScore = 5
-				cutoffGeoScore = 25			
+				cutoffGeoScore = 250
 			
 			if ( legnth_score_avg > cutoffLenScore ): continue
 			if ( angular_score_avg > cutoffAngScore ): continue
-			if ( legnth_score_avg + angular_score_avg > cutoffGeoScore ): continue
+			if ( geoScore > cutoffGeoScore ): continue
 
-			matches.append([(p.id, i), score, legnth_score_avg, angular_score_avg])
+			matches.append([(p.id, i), geoScore, legnth_score_avg, angular_score_avg])
 	# sort...
 	matches = sorted(matches,key=lambda x: x[1])
 	
-	# profile match (on a cutoff x):
+	# profile match
 	maxmatches = 1984
-	cutoffGeoScore = 1000
 	for i, m in enumerate(matches):
-		if (m[1] > cutoffGeoScore):
-			m[1] += 3000
-			continue
 		if (i > maxmatches):
 			m[1] += 3800
 			continue

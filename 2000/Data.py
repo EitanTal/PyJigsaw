@@ -68,6 +68,9 @@ def solve_simulate():
 
         targetq = ThePuzzleMap.splitlines()[pos[1] + 1][pos[0]]
         raw_candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, False)
+        if (len(raw_candidates) == 0):
+            print('No candidates. Trying exhaustive search...')
+            raw_candidates = getCandidates(nUp, nDn, nRt, nLt,n7,n9,n1,n3, targetq, True)
         candidates = reorder_candidates(raw_candidates)
         #candidates = raw_candidates
         correct_answer = solved.at(*pos)
