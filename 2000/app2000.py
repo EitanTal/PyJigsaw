@@ -35,10 +35,11 @@ def calcscore(list):
 def calc_fit_score(fitscores):
 	if (len(fitscores) == 0): return 0
 	if (len(fitscores) == 1): return fitscores[0]
-	sum = 0
+
+	s = fitter.Fitter.score(0)
 	for a in fitscores:
-		sum += a*a
-	return math.sqrt(sum)
+		s += a
+	return s
 
 
 class Board:

@@ -82,6 +82,17 @@ class Fitter():
 			in2 = other.val()
 			return (in1 < in2)
 
+		def __add__(self, other):
+			self.blackOnBlack += other.blackOnBlack
+			self.greyOnBlack += other.greyOnBlack
+			self.greyOnGrey += other.greyOnGrey
+			self.whiteOnWhite += other.whiteOnWhite
+			self.nudge = [0,0]
+			self.degs = 0
+			self.sx += other.sx
+			self.defaultNudge = [0,0]
+			return self
+
 		def __init__(self, maxNudge):
 			self.sx = 0
 			self.final = False
