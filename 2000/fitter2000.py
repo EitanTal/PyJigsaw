@@ -189,7 +189,7 @@ class Fitter():
 			if (self.Debug): print ( 100,'%' ,'Before: ', origscore)
 			return baseScore
 
-		# Keep going in this direction until the result is worse.  (3 ticks total, up to +/- 0.6 degs)
+		# Keep going in this direction until the result is worse.  (5 ticks total, up to +/- 1.0 degs)
 		if (self.StepsDebug): print ('Run!')
 		bestDeg = newDeg
 		bestVal = newVal
@@ -379,9 +379,9 @@ class Fitter():
 
 	def interactive(self, profile1, profile1_orientation, profile2, profile2_orientation):
 		nudge = [0,0]
-		j1 = jigsaw.jigsaw.load(profile1)
+		j1 = jigsaw2000.jigsaw.load(profile1)
 		j1.orient(profile1_orientation)
-		j2 = jigsaw.jigsaw.load(profile2)
+		j2 = jigsaw2000.jigsaw.load(profile2)
 		j2.orient(profile2_orientation)	
 		# B side adjustment:
 		a = j1.profile[0]
@@ -437,10 +437,10 @@ if __name__ == '__main__':
 		profile2 = sys.argv[3]
 		profile2_orientation = int(sys.argv[4])
 	
-	j1 = jigsaw.jigsaw.load(profile1)
+	j1 = jigsaw2000.jigsaw.load(profile1)
 	j1.orient(profile1_orientation)
 	
-	j2 = jigsaw.jigsaw.load(profile2)
+	j2 = jigsaw2000.jigsaw.load(profile2)
 	j2.orient(profile2_orientation)
 
 	#f.BruteForce = True

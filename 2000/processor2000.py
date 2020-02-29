@@ -7,6 +7,8 @@ import jigsaw2000
 import sys
 from itertools import chain
 import os
+import os.path
+import fnmatch
 
 class Quad:
 	pass
@@ -23,7 +25,7 @@ white = 256
 bottom = 0.25 * white
 top    = 0.75 * white
 cornerdb = {}
-datadir = r'C:\jigsaw\data\2000\breakme'
+datadir = r'C:\jigsaw\data\2000'
 
 scalefactor = 0.9005 # 90.05%
 scalefactorCam = 1.000
@@ -487,7 +489,7 @@ def findValley(graph):
 	result = 0
 	largest_min = -99999
 	for m in mins:
-		if m < len(graph):
+		if m+10 < len(graph) and m > 4:  # Avoid the results near the end
 			if graph[m] > largest_min:
 				largest_min = graph[m]
 				result = m
@@ -744,7 +746,7 @@ def check_before_processing(imgTmp):
 			return False
 	return True
 	
-def example(i):
+def example(i, show):
 	print ('Analysing', i)
 	#x = process_boxart(i)
 	filename = r'C:\jigsaw\data\2000'+'\\png\\'+i+".png"
@@ -753,11 +755,24 @@ def example(i):
 	check_before_processing(bgr)
 	x = process_cam(bgr)
 	x.id = i
-	x.show(True)
+	if (show):
+		x.show(True)
 	x.save()
 
+def unrollWildcards(fname):
+	result = []
+	wd = os.path.dirname(fname)
+	full_wd = datadir + '\\png\\' + wd
+	fn = os.path.basename(fname)
+	for w in os.listdir(full_wd):
+		w = w.split('.')[0]
+		if fnmatch.fnmatch(w,fn):
+			result += [wd + '/' + w]
+
+	return result
+
 if __name__ == '__main__':
-	fname = 'other1/d_2'
+	fname = 'other3/*'
 
 	if '-debug' in sys.argv:
 		debug = True
@@ -772,5 +787,8 @@ if __name__ == '__main__':
 
 	if len(sys.argv) >= 2: 
 		fname = sys.argv[1]
-	if '.png' in fname: fname = fname[:-4]
-	example(fname.replace('\\','/'))
+	names = unrollWildcards(fname)
+	show = (len(names) == 1)
+	for x in names:
+		if '.png' in x: x = x[:-4]
+		example(x.replace('\\','/'), show)
