@@ -57,7 +57,10 @@ class jigsaw:
 		print('Types:  ', self.sidetype)
 		print('Angles: ', self.ang)
 		print('id:     ', self.id)
-		print('gauge_x ', self.gauge_x)
+		tmp = np.copy(self.gauge_x)
+		for i in range(len(self.sidetype)):
+			if (self.sidetype[i] < 0): tmp[i] = int(self.sidelen[i]) - tmp[i]
+		print('gauge_x ', self.gauge_x, '(Readable:', tmp,')')
 		if (showimage):
 			for p in self.profile:
 				plt.imshow(p, cmap = plt.get_cmap('gray'))
