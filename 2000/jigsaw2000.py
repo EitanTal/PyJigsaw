@@ -3,6 +3,8 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from cv2 import cv2
+import os
+import fnmatch
 
 workdir = r'C:\jigsaw\data\2000\npz'
 
@@ -110,6 +112,18 @@ class jigsaw:
 				return classes[k]
 		return '?'
 
+def unrollWildcards(fname):
+	result = []
+	wd = os.path.dirname(fname)
+	full_wd = workdir + '\\' + wd
+	fn = os.path.basename(fname)
+	for w in os.listdir(full_wd):
+		w = w.split('.')[0]
+		if fnmatch.fnmatch(w,fn):
+			result += [wd + '/' + w]
+
+	return result
+
 if __name__ == '__main__':
 	fname = 'Other3/f_1'
 	if len(sys.argv) >= 2: fname = sys.argv[1]
@@ -122,8 +136,10 @@ if __name__ == '__main__':
 				print(j.determinetype(),end='')
 			print()
 	else:
-		if '.npz' in fname: fname = fname[:-4]
-		j = jigsaw.load(fname)
-		j.show('-text' not in sys.argv)
-		if ('-png' in sys.argv): j.exportpng()
-		
+		names = unrollWildcards(fname)
+		show = (len(names) == 1)
+		for x in names:
+			if '.npz' in x: x = x[:-4]
+			j = jigsaw.load(x)
+			j.show('-text' not in sys.argv)
+			if ('-png' in sys.argv): j.exportpng()

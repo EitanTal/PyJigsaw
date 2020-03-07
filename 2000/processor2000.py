@@ -24,7 +24,13 @@ allowedOreintation = None
 white = 256
 bottom = 0.25 * white
 top    = 0.75 * white
-cornerdb = {}
+cornerdb = {'brown/e_1' : [[169,53],[430,70],[383,459],[89,462]],
+'darkgrn/f_1' : [[100,152],[459,137],[450,455],[110,408]],
+'lghtgrn/c_9' : [[198,48],[522,210],[405,465],[84,285]],
+'lghtgrn/e_6' : [[206,5],[523,177],[392,445],[101,247]],
+'lghtgrn/f_2' : [[328,21],[523,260],[212,461],[49,206]],
+'lghtgrn/i_4' : [[325,34],[505,234],[230,474],[47,270]],
+'lghtgrn/j_8' : [[326,28],[515,273],[188,461],[50,227]]}
 datadir = r'C:\jigsaw\data\2000'
 
 scalefactor = 0.9005 # 90.05%
@@ -336,80 +342,83 @@ def rejectNonCornerMaximas(records, maxdist):
 	return result
 		
 	
-def findCorners(img):
-	# Find Center of mass:
-	cm = findCenter(img)
-	if (debugGeometry):
-		print('center of mass:', cm)
+def findCorners(img, manualCrnrs=None):
+	if (manualCrnrs is None):
+		# Find Center of mass:
+		cm = findCenter(img)
+		if (debugGeometry):
+			print('center of mass:', cm)
 
-	# Find Corners and Knobs:
-	b = makeRad(img, 1500, cm)
-	o = findMinima(-b)
+		# Find Corners and Knobs:
+		b = makeRad(img, 1500, cm)
+		o = findMinima(-b)
 
-	# Find Dips:
-	dipThresh = b.mean() * 0.5
-	minimas = findMinima(b)
-	if (debugGeometry):
-		print ('Maxima:', o)
-		print ('Minima:', minimas)
-	
-	#print ('minimas: ',minimas)
-	nextD = 0
-	for d in minimas:
-		#print ('Inspected minima: ',b[d])
-		if (b[d] < dipThresh and d > nextD): 
-			nextD = d + 60 # Next Dip expected to be opposite of this one. This is done to avoid noise.
-	
-	# Locate 4 corners cartesian coordinates:
-	record = []
-	for peak in o:
-		record.append((peak,b[peak]))
-	
-	# Expect non-corners to be at most 65 degrees from BOTH their 2 neighboring maximas.
-	recordBackup = record[:]
-	tryThese = [25, 20, 35, 18, 37]
-	#tryThese = [20]
-
-	for t in tryThese:
-		record = recordBackup[:]
-		tried = rejectNonCornerMaximas(record, t)
-		if (len(tried) == 4):
-			record = tried
-			if (debugGeometry):	print ('rejectNonCornerMaximas success at', t)
-			break
-		else:
-			if (debugGeometry):	print ('rejectNonCornerMaximas fail at', t,'records:',len(tried))
-	else:
-		print('!! rejectNonCornerMaximas failed.')
-		record = selectDiagonalConers(recordBackup)
+		# Find Dips:
+		dipThresh = b.mean() * 0.5
+		minimas = findMinima(b)
+		if (debugGeometry):
+			print ('Maxima:', o)
+			print ('Minima:', minimas)
 		
-		#record = recordBackup[:]
-	
-	
-	# Sort by distance.
-	# keep the lowest four, they are the corners.
+		#print ('minimas: ',minimas)
+		nextD = 0
+		for d in minimas:
+			#print ('Inspected minima: ',b[d])
+			if (b[d] < dipThresh and d > nextD): 
+				nextD = d + 60 # Next Dip expected to be opposite of this one. This is done to avoid noise.
+		
+		# Locate 4 corners cartesian coordinates:
+		record = []
+		for peak in o:
+			record.append((peak,b[peak]))
+		
+		# Expect non-corners to be at most 65 degrees from BOTH their 2 neighboring maximas.
+		recordBackup = record[:]
+		tryThese = [25, 20, 35, 18, 37]
+		#tryThese = [20]
 
-	record = sorted(record,key=lambda x: x[1])
-	# reject maximas that are too close: (less than 30 degs in each direction)
-	
-	del record[4:]
-	
-	# Great. Now sort by angle again.
-	record = sorted(record,key=lambda x: x[0])
-	
-	corners = []
-	if (len(record) < 4):
-		print('FindCorners: too few records.', record)
-	for i in range(4): # Four corners...
-		angle, dist = record[i]
-		_ang = math.radians(angle)
-		x = int((math.cos(_ang) * dist) + cm[0])
-		y = int((math.sin(_ang) * dist) + cm[1])
-		corners.append((x,y))
+		for t in tryThese:
+			record = recordBackup[:]
+			tried = rejectNonCornerMaximas(record, t)
+			if (len(tried) == 4):
+				record = tried
+				if (debugGeometry):	print ('rejectNonCornerMaximas success at', t)
+				break
+			else:
+				if (debugGeometry):	print ('rejectNonCornerMaximas fail at', t,'records:',len(tried))
+		else:
+			print('!! rejectNonCornerMaximas failed.')
+			record = selectDiagonalConers(recordBackup)
+			
+			#record = recordBackup[:]
+		
+		# Sort by distance.
+		# keep the lowest four, they are the corners.
 
-	if (debugGeometry):
-		print ('(pre refine) Candidates for corners: (Polar)', record)
-		print ('(pre refine) Candidates for corners: (Cartesian)', corners)
+		record = sorted(record,key=lambda x: x[1])
+		# reject maximas that are too close: (less than 30 degs in each direction)
+		
+		del record[4:]
+		
+		# Great. Now sort by angle again.
+		record = sorted(record,key=lambda x: x[0])
+		
+		corners = []
+		if (len(record) < 4):
+			print('FindCorners: too few records.', record)
+		for i in range(4): # Four corners...
+			angle, dist = record[i]
+			_ang = math.radians(angle)
+			x = int((math.cos(_ang) * dist) + cm[0])
+			y = int((math.sin(_ang) * dist) + cm[1])
+			corners.append((x,y))
+
+		if (debugGeometry):
+			print ('(pre refine) Candidates for corners: (Polar)', record)
+			print ('(pre refine) Candidates for corners: (Cartesian)', corners)
+
+	else:
+		corners = manualCrnrs
 
 	# Increase accuracy of corners' locations.
 	refineCorners(img, corners)
@@ -728,10 +737,10 @@ def process_boxart(imgnr):
 	
 	return x
 
-def process_cam(imgTmp):
+def process_cam(imgTmp, manualCrnrs=None):
 	sf = scalefactorCam
 	img = Preprocessing_cam(imgTmp) # 1 Preprocessing
-	corners = findCorners(img)      # 2 Corner detection
+	corners = findCorners(img,manualCrnrs)      # 2 Corner detection
 	q = makeQuad(corners)           #    (convert to quad)
 	p = getProfiles(img, q, sf)     # 3 Get Profiles
 	for i in range(4):	q.sideLen[i] *= scalefactorCam #apply scale factor to side lengths
@@ -750,10 +759,14 @@ def example(i, show):
 	print ('Analysing', i)
 	#x = process_boxart(i)
 	filename = r'C:\jigsaw\data\2000'+'\\png\\'+i+".png"
+	manualCrnrs = None
+	if i in cornerdb.keys():
+		manualCrnrs = cornerdb[i]
+		print('manual corners entered for', i)
 	rgb = cv2.imread(filename)
 	bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 	check_before_processing(bgr)
-	x = process_cam(bgr)
+	x = process_cam(bgr, manualCrnrs)
 	x.id = i
 	if (show):
 		x.show(True)
@@ -772,7 +785,7 @@ def unrollWildcards(fname):
 	return result
 
 if __name__ == '__main__':
-	fname = 'other3/*'
+	fname = 'brown/e_1'
 
 	if '-debug' in sys.argv:
 		debug = True
