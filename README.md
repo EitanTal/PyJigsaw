@@ -1,5 +1,5 @@
 # PyJigsaw
-Puzzle solver written in python. Used to solve BlackHell 1000 piece puzzle I got from Amazon.
+Puzzle solver written in python. Used to solve BlackHell 1000 piece puzzle I got from Amazon. Also solves 2000 White hell. See the 2000/ folder for the 2000 peice puzzle.
 
 # Top level description of the files:
 ## Modules
@@ -13,6 +13,8 @@ This is an internal module that scores how well two sides of two peices fit toge
 This is an internal module that records a jigsaw peice.
 ### legit.py: 
 This is a utility tool that gives a quick go/nogo of a given .npz file. Useful for looking at a quick summary of a batch execution of peices analysis.
+### capture.py (2000 only)
+This is an app that scans the peices as you slide them underneath the microscope. They get captured, analysed and saved.
 
 ## Batch file
 ### all_process.bat: 
