@@ -1,7 +1,7 @@
 # PyJigsaw
 Puzzle solver written in python. Used to solve BlackHell 1000 piece puzzle I got from Amazon. Also solves 2000 White hell. See the 2000/ folder for the 2000 peice puzzle.
 
-![image](https://raw.githubusercontent.com/EitanTal/PyJigsaw/etal/pics/WhitePuzzleSolved.jpg)
+![image](https://raw.githubusercontent.com/EitanTal/PyJigsaw/master1/WhitePuzzleSolved.jpg)
 
 # Top level description of the files:
 ## Modules
